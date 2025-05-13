@@ -1,7 +1,7 @@
 from .logger import Logger
 from .config import Config
 from .notification import Message
-from telegram import Update, LinkPreviewOptions
+from telegram import Update, LinkPreviewOptions, MessageEntity
 import telegramify_markdown
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
@@ -11,7 +11,11 @@ import requests
 from .binance_api import BinanceAPI
 import json
 import traceback
-import html
+import pandas as pd
+import matplotlib.pyplot as plt
+import mplfinance as mpf
+from pandas import DatetimeIndex
+import io
 
 EPS = 1e-2
 class Command:
@@ -77,6 +81,7 @@ class Command:
                 format=apprise.NotifyFormat.TEXT
             ), True)
     
+    # fclose coin
     async def fclose(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         coin = context.args[0].upper()
         try:
@@ -101,6 +106,40 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.fclose - {symbol}",
+                body=f"Error: {err=}", 
+                format=apprise.NotifyFormat.TEXT
+            ), True)
+
+    # fch coin interval(optional, default=15m) range(optional, default=21 * interval)
+    async def fchart(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        coin = context.args[0].upper()
+        interval = context.args[1] if len(context.args) > 1 else None
+        range = context.args[2] if len(context.args) > 2 else None
+        try:
+            symbol = coin + "USDT"
+            data, interval = self.binance_api.f_get_historical_klines(symbol, interval, range)
+            ticker_24h = self.binance_api.f_24hr_ticker(symbol)
+            buffer = self.generate_chart("FUTURES", symbol, data, interval)
+            caption_msg = self.build_caption(f"https://www.binance.com/en/futures/{symbol}", symbol, ticker_24h)
+            await update.message.reply_photo(photo=buffer, caption=telegramify_markdown.markdownify(caption_msg), parse_mode=ParseMode.MARKDOWN_V2)
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.fchart - {symbol}",
+                body=f"Error: {err=}", 
+                format=apprise.NotifyFormat.TEXT
+            ), True)
+
+    # fp coin
+    async def fprice(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        coin = context.args[0].upper()
+        try:
+            symbol = coin + "USDT"
+            ticker_24h = self.binance_api.f_24hr_ticker(symbol)
+            caption_msg = self.build_caption(f"https://www.binance.com/en/futures/{symbol}", symbol, ticker_24h)
+            await update.message.reply_text(text=telegramify_markdown.markdownify(caption_msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.fprice - {symbol}",
                 body=f"Error: {err=}", 
                 format=apprise.NotifyFormat.TEXT
             ), True)
@@ -222,3 +261,34 @@ class Command:
             }
             batch_orders.append(close_order)
         return batch_orders
+    
+    def generate_chart(self, type: str, symbol: str, data: list, interval: str):
+        for line in data:
+            del line[6:]
+            for i in range(1, len(line)):
+                line[i] = float(line[i])
+        df = pd.DataFrame(data, columns=['date', 'open', 'high', 'low', 'close', 'volume'])
+        df['date'] = pd.to_datetime(df['date'], unit='ms', utc=True).map(lambda x: x.tz_convert('Asia/Ho_Chi_Minh'))
+        df.set_index('date', inplace=True)
+        # Plotting
+        # Create my own `marketcolors` style:
+        mc = mpf.make_marketcolors(up='#2fc71e',down='#ed2f1a',inherit=True)
+        # Create my own `MatPlotFinance` style:
+        s  = mpf.make_mpf_style(base_mpl_style=['bmh', 'dark_background'], marketcolors=mc, y_on_right=True)    
+        # Plot it
+        buffer = io.BytesIO()
+        fig, axlist = mpf.plot(df, figratio=(10, 6), type="candle", tight_layout=True, ylabel = "Precio ($)", returnfig=True, volume=True, style=s)
+        # Add Title
+        axlist[0].set_title(f"{type} - {symbol} - {interval}", fontsize=25, style='italic')
+        fig.savefig(fname=buffer, dpi=300, bbox_inches="tight")
+        buffer.seek(0)
+        return buffer
+    
+    def build_caption(self, url: str, symbol: str, ticker_24h: dict):
+        caption_msg = f">#{symbol}: [Link chart]({url})\n"
+        caption_msg += f"⚡ {'Price': <8} **{round(float(ticker_24h['lastPrice']), 3)}**\n"
+        caption_msg += f"🕢 {'24h': <8}**{ticker_24h['priceChangePercent']}%**\n"
+        caption_msg += f"📝 {'OPrice': <8}**{round(float(ticker_24h['openPrice']), 3)}**\n"
+        caption_msg += f"⬆️ {'High': <8}**{round(float(ticker_24h['highPrice']), 3)} ({round((float(ticker_24h['highPrice']) - float(ticker_24h['openPrice'])) / float(ticker_24h['openPrice']) * 100, 2)}%**)\n"
+        caption_msg += f"⬇️ {'Low': <8}**{round(float(ticker_24h['lowPrice']), 3)} ({round((float(ticker_24h['lowPrice']) - float(ticker_24h['openPrice'])) / float(ticker_24h['openPrice']) * 100, 2)}%**)\n"
+        return caption_msg

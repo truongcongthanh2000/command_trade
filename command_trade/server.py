@@ -23,6 +23,8 @@ def main():
         application.add_handler(CommandHandler("info", command.info))
         application.add_handler(CommandHandler("forder", command.forder))
         application.add_handler(CommandHandler("fclose", command.fclose))
+        application.add_handler(CommandHandler("fch", command.fchart))
+        application.add_handler(CommandHandler("fp", command.fprice))
         application.add_error_handler(command.error)
         application.run_polling()
     while True:

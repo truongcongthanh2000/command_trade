@@ -1,10 +1,14 @@
 from .config import Config
 from .logger import Logger
+from .util import convert_to_seconds
 import threading
 from contextlib import contextmanager
 from typing import Dict, Set, Tuple
 from .notification import Message
 from binance.client import Client
+import time
+
+BINANCE_INTERVAL = ["1s", "1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "8h", "12h", "1d", "3d", "1w", "1M"]
 
 class BinanceCache:  # pylint: disable=too-few-public-methods
     _balances: Dict[str, float] = {}
@@ -63,10 +67,19 @@ class BinanceAPI:
         return self.binance_client.futures_change_leverage(symbol=symbol, leverage=leverage)
 
     def f_price(self, symbol: str) -> float:
-        return float(self.binance_client.futures_mark_price(symbol=symbol)["markPrice"])
+        return float(self.binance_client.futures_symbol_ticker(symbol=symbol)["price"])
     
     def f_cancel_all_open_orders(self, symbol: str):
         return self.binance_client.futures_cancel_all_open_orders(symbol=symbol)
     
-    def f_get_historical_klines(self, symbol: str):
-        return self.binance_client.futures_historical_klines(symbol, )
+    def f_get_historical_klines(self, symbol: str, interval: str | None = None, range: str | None = None):
+        if interval is None or interval not in BINANCE_INTERVAL:
+            interval = "15m"
+        if range is None:
+            range = convert_to_seconds(interval) * 21
+        else:
+            range = convert_to_seconds(range)
+        return self.binance_client.futures_historical_klines(symbol, interval, round(time.time() - range) * 1000), interval
+
+    def f_24hr_ticker(self, symbol: str):
+        return self.binance_client.futures_ticker(symbol=symbol)
