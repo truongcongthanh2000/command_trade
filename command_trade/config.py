@@ -1,0 +1,38 @@
+import yaml
+import os
+import json
+import platform
+class Config:
+    def __init__(self):
+        config = {
+            "telegram": {
+                "bot_token": ""
+            },
+            "command": {
+                "api_key": "",
+                "api_secret": "",
+                "enabled": False,
+                "tld": "com"
+            }
+        }
+        self.TWITTER_COOKIES_DICT = {}
+        if os.path.exists("config/config_remote.yaml"):
+            with open("config/config_remote.yaml", "r", encoding="utf-8") as f:
+                config = yaml.safe_load(f)
+        self.TELEGRAM_NOTIFY_URL = os.environ.get("TELEGRAM_NOTIFY_URL")
+        self.TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN") or config["telegram"]["bot_token"]
+
+        self.BINANCE_API_KEY = os.environ.get("BINANCE_API_KEY") or config["binance"]["api_key"]
+        self.BINANCE_API_SECRET = os.environ.get("BINANCE_API_SECRET") or config["binance"]["api_secret"]
+        self.BINANCE_TLD = os.environ.get("BINANCE_TLD") or config["binance"]["tld"]
+
+        if "COMMAND_ENABLED" in os.environ:
+            self.COMMAND_ENABLED = os.environ.get("COMMAND_ENABLED").lower() == "true"
+        else:
+            self.COMMAND_ENABLED = config["command"]["enabled"]
+    def beautify(self):
+        response = vars(self).copy()
+        response["platform"] = platform.system()
+        response["BINANCE_API_KEY"] = "...."
+        response["BINANCE_API_SECRET"] = "...."
+        return response

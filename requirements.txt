@@ -1,0 +1,5 @@
+apprise==1.9.3
+python-telegram-bot==22.0
+python-binance==1.0.28
+telegramify-markdown==0.5.1
+mistletoe==1.4.0
