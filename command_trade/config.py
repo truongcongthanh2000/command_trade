@@ -15,7 +15,6 @@ class Config:
                 "tld": "com"
             }
         }
-        self.TWITTER_COOKIES_DICT = {}
         if os.path.exists("config/config_remote.yaml"):
             with open("config/config_remote.yaml", "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f)

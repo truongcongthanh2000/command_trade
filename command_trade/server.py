@@ -9,6 +9,6 @@ import apprise
 def main():
     config = Config()
     logger = Logger(config, "command_trade_server")
-    logger.info(Message(title = f"Start News Trade - Time: {datetime.fromtimestamp(int(time.time()), tz=pytz.timezone('Asia/Ho_Chi_Minh'))}", body=f"{json.dumps(config.beautify(), indent=2)}", format=apprise.NotifyFormat.TEXT), True)
+    logger.info(Message(title = f"Start Command Trade - Time: {datetime.fromtimestamp(int(time.time()), tz=pytz.timezone('Asia/Ho_Chi_Minh'))}", body=f"{json.dumps(config.beautify(), indent=2)}", format=apprise.NotifyFormat.TEXT), True)
     while True:
         pass
