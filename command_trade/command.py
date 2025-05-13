@@ -4,7 +4,7 @@ from .notification import Message
 from telegram import Update, LinkPreviewOptions
 import telegramify_markdown
 from telegram.constants import ParseMode
-from telegram.ext import Application, CommandHandler, ContextTypes, Updater
+from telegram.ext import ContextTypes
 import apprise
 import socket
 import requests
@@ -19,17 +19,6 @@ class Command:
         self.config = config
         self.logger = logger
         self.binance_api = binance_api
-
-    def start_bot(self):
-        if self.config.COMMAND_ENABLED == False:
-            return
-        application = Application.builder().token(self.config.TELEGRAM_BOT_TOKEN).read_timeout(7).get_updates_read_timeout(42).build()
-        application.add_handler(CommandHandler("start", self.start))
-        application.add_handler(CommandHandler("info", self.info))
-        application.add_handler(CommandHandler("forder", self.forder))
-        application.add_handler(CommandHandler("fclose", self.fclose))
-        application.add_error_handler(self.error)
-        application.run_polling(drop_pending_updates=True)
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handles command /start from the admin"""

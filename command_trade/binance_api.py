@@ -19,9 +19,9 @@ class BinanceAPI:
         self.config = config
         self.logger = logger
         self.binance_client = Client(
-            api_key=config.COMMAND_API_KEY,
-            api_secret=config.COMMAND_API_SECRET,
-            tld=config.COMMAND_TLD
+            api_key=config.BINANCE_API_KEY,
+            api_secret=config.BINANCE_API_SECRET,
+            tld=config.BINANCE_TLD
         )
 
     # spot api
