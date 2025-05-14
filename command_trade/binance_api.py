@@ -83,3 +83,6 @@ class BinanceAPI:
 
     def f_24hr_ticker(self, symbol: str):
         return self.binance_client.futures_ticker(symbol=symbol)
+    
+    def f_user_trades(self, symbol: str, orderId: int):
+        return self.binance_client.futures_account_trades(symbol=symbol, orderId=orderId)

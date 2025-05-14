@@ -116,9 +116,20 @@ class Command:
                     ), True)
                     ok = False
             if ok:
-                msg = f"👋 Your close positions for {symbol} is successful\n {json.dumps(batch_orders, indent=2)}\n-------------\n"
                 cancel_open_orders_response = self.binance_api.f_cancel_all_open_orders(symbol)
-                msg += f"👋 Cancel all open orders for {symbol}\n {json.dumps(cancel_open_orders_response, indent=2)}"
+                msg = f"👋 Cancel all open orders for {symbol}\n {json.dumps(cancel_open_orders_response, indent=2)}\n-------------\n"
+                for idx in range(len(batch_orders)):
+                    orderId = int(responses[idx]["orderId"])
+                    userTrades = self.binance_api.f_user_trades(symbol, orderId)
+                    totalPnl = 0.0
+                    for trade in userTrades:
+                        totalPnl += float(trade["realizedPnl"])
+                        # should need minus commission?
+                    batch_orders[idx]["result_trade"] = {
+                        "order_id": orderId,
+                        "pnl": f"${round(totalPnl, 2)}"
+                    }
+                msg += f"👋 Your close positions for {symbol} is successful\n {json.dumps(batch_orders, indent=2)}"
                 await update.message.reply_text(text=msg)
         except Exception as err:
             self.logger.error(Message(
@@ -281,7 +292,7 @@ class Command:
             }
             batch_orders.append(close_order)
         return batch_orders
-    
+
     def generate_chart(self, type: str, symbol: str, data: list, interval: str):
         for line in data:
             del line[6:]
