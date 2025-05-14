@@ -58,7 +58,7 @@ class Command:
     
     async def info(self, update: Update, context: ContextTypes.DEFAULT_TYPE): # info current spot/future account, ex: balance, pnl, orders, ...
         try:
-            msg = self.info_spot() + '\n--------------------\n' + self.info_future()
+            msg = self.info_spot() + '\n--------------------\n' + self.info_future()[0]
             msg = telegramify_markdown.markdownify(msg)
             await update.message.reply_text(text=msg, parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
         except Exception as err:
@@ -190,11 +190,14 @@ class Command:
             ), True)
 
     async def f_get_stats(self, context: ContextTypes.DEFAULT_TYPE):
-        info = self.info_future(True)
+        info, totalROI, pnl = self.info_future(True)
         if info == "":
             return
-        info = f"Time: {datetime.fromtimestamp(int(time.time()), tz=pytz.timezone('Asia/Ho_Chi_Minh'))} - " + info
-        await context.bot.send_message(self.config.TELEGRAM_PNL_CHAT_ID, text=telegramify_markdown.markdownify(info), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
+        msg = ""
+        if abs(totalROI) >= self.config.TELEGRAM_ROI_SIGNAL: # notify me when signal totalROI >= 10%
+            msg += f"{self.config.TELEGRAM_ME} - **${pnl}**\n"
+        msg += f"**{datetime.fromtimestamp(int(time.time()), tz=pytz.timezone('Asia/Ho_Chi_Minh'))}** - " + info
+        await context.bot.send_message(self.config.TELEGRAM_PNL_CHAT_ID, text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
     
     async def error(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Log the error and send a telegram message to notify the developer."""
@@ -237,7 +240,7 @@ class Command:
         account_info = self.binance_api.get_futures_account()
         positions = self.binance_api.get_current_position()
         if skip_info_when_no_positions == True and len(positions) == 0:
-            return ""
+            return ("", 0, 0)
         for position in positions:
             symbol = position["symbol"]
             url = f"https://www.binance.com/en/futures/{symbol}"
@@ -260,7 +263,7 @@ class Command:
         info += f"**Total Unrealized Profit**: ${float(account_info['totalUnrealizedProfit']):.2f}\n"
         info += f"**Total ROI**: {round(float(account_info['totalUnrealizedProfit']) / float(account_info['totalWalletBalance']) * 100, 2)}%\n"
         info += f"**After Total Balance**: ${float(account_info['totalMarginBalance']):.2f}"
-        return info
+        return (info, round(float(account_info['totalUnrealizedProfit']) / float(account_info['totalWalletBalance']) * 100, 2), round(float(account_info['totalUnrealizedProfit']), 2))
     
     def f_get_orders(self, side: str, symbol: str, leverage: int, margin: float, context: ContextTypes.DEFAULT_TYPE):
         price = self.binance_api.f_price(symbol)
