@@ -24,6 +24,23 @@ class Command:
         self.logger = logger
         self.binance_api = binance_api
 
+    async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        msg = "/start - Get public, local IP of the server\n"
+        msg += "/info - Get current trade, balance and pnl\n"
+        msg += "/forder - Make futures market order 'forder buy/sell coin leverage margin sl(optional) tp(optional)'\n"
+        msg += "/fclose - Close all position and open order 'fclose coin'\n"
+        msg += "/fch - Get chart 'fch coin interval(optional, default=15m) range(optional, default=21 * interval)'\n"
+        msg += "/fp - Get prices 'fp coin1 coin2 ....'\n"
+        """Handles command /help from the admin"""
+        try:
+            await update.message.reply_text(text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2)
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.help - {update}",
+                body=f"Error: {err=}", 
+                format=apprise.NotifyFormat.TEXT
+            ), True)
+    
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handles command /start from the admin"""
         try:
@@ -129,13 +146,16 @@ class Command:
                 format=apprise.NotifyFormat.TEXT
             ), True)
 
-    # fp coin
-    async def fprice(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        coin = context.args[0].upper()
+    # fp coin1 coin2 ....
+    async def fprices(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
-            symbol = coin + "USDT"
-            ticker_24h = self.binance_api.f_24hr_ticker(symbol)
-            caption_msg = self.build_caption(f"https://www.binance.com/en/futures/{symbol}", symbol, ticker_24h)
+            caption_msg = ''
+            for coin in context.args:
+                symbol = coin.upper() + "USDT"
+                ticker_24h = self.binance_api.f_24hr_ticker(symbol)
+                if len(caption_msg) > 0:
+                    caption_msg += '---------------------\n'
+                caption_msg = caption_msg + self.build_caption(f"https://www.binance.com/en/futures/{symbol}", symbol, ticker_24h)
             await update.message.reply_text(text=telegramify_markdown.markdownify(caption_msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
         except Exception as err:
             self.logger.error(Message(
@@ -285,7 +305,7 @@ class Command:
         return buffer
     
     def build_caption(self, url: str, symbol: str, ticker_24h: dict):
-        caption_msg = f">#{symbol}: [Link chart]({url})\n"
+        caption_msg = f"#{symbol}: [Link chart]({url})\n"
         caption_msg += f"⚡ {'Price': <8} **{round(float(ticker_24h['lastPrice']), 3)}**\n"
         caption_msg += f"🕢 {'24h': <8}**{ticker_24h['priceChangePercent']}%**\n"
         caption_msg += f"📝 {'OPrice': <8}**{round(float(ticker_24h['openPrice']), 3)}**\n"

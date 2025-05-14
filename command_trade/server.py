@@ -19,12 +19,13 @@ def main():
     command = Command(config, logger, binance_api=binanceAPI)
     if config.COMMAND_ENABLED == True:
         application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).read_timeout(7).get_updates_read_timeout(42).build()
+        application.add_handler(CommandHandler("help", command.help))
         application.add_handler(CommandHandler("start", command.start))
         application.add_handler(CommandHandler("info", command.info))
         application.add_handler(CommandHandler("forder", command.forder))
         application.add_handler(CommandHandler("fclose", command.fclose))
         application.add_handler(CommandHandler("fch", command.fchart))
-        application.add_handler(CommandHandler("fp", command.fprice))
+        application.add_handler(CommandHandler("fp", command.fprices))
         application.add_error_handler(command.error)
         application.run_polling()
     while True:
