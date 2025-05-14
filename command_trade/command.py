@@ -305,10 +305,12 @@ class Command:
         return buffer
     
     def build_caption(self, url: str, symbol: str, ticker_24h: dict):
+        pair_info = self.binance_api.f_get_symbol_info(symbol)
+        price_precision = int(pair_info['pricePrecision']) if pair_info else 4
         caption_msg = f"#{symbol}: [Link chart]({url})\n"
-        caption_msg += f"⚡ {'Price': <8} **{round(float(ticker_24h['lastPrice']), 3)}**\n"
+        caption_msg += f"⚡ {'Price': <8} **{round(float(ticker_24h['lastPrice']), price_precision)}**\n"
         caption_msg += f"🕢 {'24h': <8}**{ticker_24h['priceChangePercent']}%**\n"
-        caption_msg += f"📝 {'OPrice': <8}**{round(float(ticker_24h['openPrice']), 3)}**\n"
-        caption_msg += f"⬆️ {'High': <8}**{round(float(ticker_24h['highPrice']), 3)} ({round((float(ticker_24h['highPrice']) - float(ticker_24h['openPrice'])) / float(ticker_24h['openPrice']) * 100, 2)}%**)\n"
-        caption_msg += f"⬇️ {'Low': <8}**{round(float(ticker_24h['lowPrice']), 3)} ({round((float(ticker_24h['lowPrice']) - float(ticker_24h['openPrice'])) / float(ticker_24h['openPrice']) * 100, 2)}%**)\n"
+        caption_msg += f"📝 {'OPrice': <8}**{round(float(ticker_24h['openPrice']), price_precision)}**\n"
+        caption_msg += f"⬆️ {'High': <8}**{round(float(ticker_24h['highPrice']), price_precision)} ({round((float(ticker_24h['highPrice']) - float(ticker_24h['openPrice'])) / float(ticker_24h['openPrice']) * 100, 2)}%**)\n"
+        caption_msg += f"⬇️ {'Low': <8}**{round(float(ticker_24h['lowPrice']), price_precision)} ({round((float(ticker_24h['lowPrice']) - float(ticker_24h['openPrice'])) / float(ticker_24h['openPrice']) * 100, 2)}%**)\n"
         return caption_msg
