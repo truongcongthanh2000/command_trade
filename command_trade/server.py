@@ -9,6 +9,7 @@ import pytz
 import json
 import apprise
 from telegram.ext import Application, CommandHandler
+from telegram import Update
 
 def main():
     config = Config()
@@ -26,7 +27,8 @@ def main():
         application.add_handler(CommandHandler("fclose", command.fclose))
         application.add_handler(CommandHandler("fch", command.fchart))
         application.add_handler(CommandHandler("fp", command.fprices))
+        application.add_handler(CommandHandler("fstats", command.fstats))
         application.add_error_handler(command.error)
-        application.run_polling(drop_pending_updates=True)
+        application.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
     while True:
         pass

@@ -1,12 +1,12 @@
 from .logger import Logger
 from .config import Config
 from .notification import Message
+from .util import remove_job_if_exists
 from telegram import Update, LinkPreviewOptions, MessageEntity
 import telegramify_markdown
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 import apprise
-import socket
 import requests
 from .binance_api import BinanceAPI
 import json
@@ -14,7 +14,6 @@ import traceback
 import pandas as pd
 import matplotlib.pyplot as plt
 import mplfinance as mpf
-from pandas import DatetimeIndex
 import io
 
 EPS = 1e-2
@@ -31,6 +30,7 @@ class Command:
         msg += "/fclose - Close all position and open order 'fclose coin'\n"
         msg += "/fch - Get chart 'fch coin interval(optional, default=15m) range(optional, default=21 * interval)'\n"
         msg += "/fp - Get prices 'fp coin1 coin2 ....'\n"
+        msg += "/fstats - Schedult get stats for current positions 'fstats interval(seconds)"
         """Handles command /help from the admin"""
         try:
             await update.message.reply_text(text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2)
@@ -44,10 +44,8 @@ class Command:
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handles command /start from the admin"""
         try:
-            hostname = socket.gethostname()
-            IPAddr = socket.gethostbyname(hostname)
             public_ip = requests.get('https://api.ipify.org').text
-            await update.message.reply_text(text=f"👋 Hello, your server public IP is {public_ip}, local IP is {IPAddr}")
+            await update.message.reply_markdown(text=f"👋 Hello, your server public IP is {public_ip}\nCommand `/fstats` interval(seconds) to schedule get stats for current positions")
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.start - {update}",
@@ -174,6 +172,26 @@ class Command:
                 body=f"Error: {err=}", 
                 format=apprise.NotifyFormat.TEXT
             ), True)
+
+    # fstats interval(seconds)
+    async def fstats(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        interval = int(context.args[0])
+        try:
+            self.f_stats(interval, context)
+            await update.message.reply_text(f"Set stats successful!, interval={interval}s")
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.fstats - {interval}",
+                body=f"Error: {err=}", 
+                format=apprise.NotifyFormat.TEXT
+            ), True)
+
+    async def f_get_stats(self, context: ContextTypes.DEFAULT_TYPE):
+        info = self.info_future(True)
+        print("f_get_stats", info)
+        if info == "":
+            return
+        await context.bot.send_message(self.config.TELEGRAM_PNL_CHAT_ID, text=telegramify_markdown.markdownify(info), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
     
     async def error(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Log the error and send a telegram message to notify the developer."""
@@ -211,10 +229,12 @@ class Command:
         info += f"**Total balance**: {total_balance:.2f}"
         return info
     
-    def info_future(self):
+    def info_future(self, skip_info_when_no_positions: bool = False):
         info = "**Future Account**\n"
         account_info = self.binance_api.get_futures_account()
         positions = self.binance_api.get_current_position()
+        if skip_info_when_no_positions == True and len(positions) == 0:
+            return ""
         for position in positions:
             symbol = position["symbol"]
             url = f"https://www.binance.com/en/futures/{symbol}"
@@ -225,8 +245,8 @@ class Command:
                 position_type = "**BUY**"
             else:
                 position_type = "**SHORT**"
-            info_position = f"[{symbol}]({url}): {position_type} **{abs(round(float(position['notional']) / float(position['initialMargin'])))}x**, size: **${position['notional']}**, margin: **${position['initialMargin']}**\n"
-            info_position += f"- entryPrice: **${position['entryPrice']}**, marketPrice: **{position['markPrice']}**\n"
+            info_position = f"[{symbol}]({url}): {position_type} **{abs(round(float(position['notional']) / float(position['initialMargin'])))}x**, margin: **${position['initialMargin']}**\n"
+            info_position += f"- entryPrice: **${position['entryPrice']}**, marketPrice: **${position['markPrice']}**\n"
             info_position += f"- PNL: **${float(position['unRealizedProfit']):.2f}**, ROI: **{round(float(position['unRealizedProfit']) / float(position['initialMargin']) * 100.0, 2)}%**\n\n"
             info += info_position
 
@@ -325,3 +345,8 @@ class Command:
         caption_msg += f"⬆️ {'High': <8}**{round(float(ticker_24h['highPrice']), price_precision)} ({round((float(ticker_24h['highPrice']) - float(ticker_24h['openPrice'])) / float(ticker_24h['openPrice']) * 100, 2)}%**)\n"
         caption_msg += f"⬇️ {'Low': <8}**{round(float(ticker_24h['lowPrice']), price_precision)} ({round((float(ticker_24h['lowPrice']) - float(ticker_24h['openPrice'])) / float(ticker_24h['openPrice']) * 100, 2)}%**)\n"
         return caption_msg
+    
+    def f_stats(self, interval: int, context: ContextTypes.DEFAULT_TYPE):
+        chat_id = self.config.TELEGRAM_PNL_CHAT_ID
+        remove_job_if_exists(str(chat_id), context)
+        context.job_queue.run_repeating(self.f_get_stats, interval=interval, first=0)

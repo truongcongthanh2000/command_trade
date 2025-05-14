@@ -6,7 +6,8 @@ class Config:
     def __init__(self):
         config = {
             "telegram": {
-                "bot_token": ""
+                "bot_token": "",
+                "pnl_chat_id": 0
             },
             "command": {
                 "api_key": "",
@@ -20,6 +21,7 @@ class Config:
                 config = yaml.safe_load(f)
         self.TELEGRAM_NOTIFY_URL = os.environ.get("TELEGRAM_NOTIFY_URL")
         self.TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN") or config["telegram"]["bot_token"]
+        self.TELEGRAM_PNL_CHAT_ID = int(os.environ.get("TELEGRAM_PNL_CHAT_ID") or config["telegram"]["pnl_chat_id"])
 
         self.BINANCE_API_KEY = os.environ.get("BINANCE_API_KEY") or config["binance"]["api_key"]
         self.BINANCE_API_SECRET = os.environ.get("BINANCE_API_SECRET") or config["binance"]["api_secret"]
