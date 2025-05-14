@@ -30,7 +30,7 @@ class Command:
         msg += "/fclose - Close all position and open order 'fclose coin'\n"
         msg += "/fch - Get chart 'fch coin interval(optional, default=15m) range(optional, default=21 * interval)'\n"
         msg += "/fp - Get prices 'fp coin1 coin2 ....'\n"
-        msg += "/fstats - Schedult get stats for current positions 'fstats interval(seconds)"
+        msg += "/fstats - Schedule get stats for current positions 'fstats interval(seconds)'"
         """Handles command /help from the admin"""
         try:
             await update.message.reply_text(text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2)
