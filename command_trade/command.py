@@ -45,7 +45,7 @@ class Command:
         """Handles command /start from the admin"""
         try:
             public_ip = requests.get('https://api.ipify.org').text
-            await update.message.reply_markdown(text=f"👋 Hello, your server public IP is {public_ip}\nCommand `/fstats` interval(seconds) to schedule get stats for current positions")
+            await update.message.reply_markdown(text=f"👋 Hello, your server public IP is `{public_ip}`\nCommand `/fstats` interval(seconds) to schedule get stats for current positions")
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.start - {update}",
