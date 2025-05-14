@@ -15,6 +15,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import mplfinance as mpf
 import io
+from datetime import datetime
+import time
+import pytz
 
 EPS = 1e-2
 class Command:
@@ -188,9 +191,9 @@ class Command:
 
     async def f_get_stats(self, context: ContextTypes.DEFAULT_TYPE):
         info = self.info_future(True)
-        print("f_get_stats", info)
         if info == "":
             return
+        info = f"Time: {datetime.fromtimestamp(int(time.time()), tz=pytz.timezone('Asia/Ho_Chi_Minh'))} - " + info
         await context.bot.send_message(self.config.TELEGRAM_PNL_CHAT_ID, text=telegramify_markdown.markdownify(info), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
     
     async def error(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
