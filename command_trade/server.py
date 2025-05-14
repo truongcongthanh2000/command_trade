@@ -27,6 +27,6 @@ def main():
         application.add_handler(CommandHandler("fch", command.fchart))
         application.add_handler(CommandHandler("fp", command.fprices))
         application.add_error_handler(command.error)
-        application.run_polling()
+        application.run_polling(drop_pending_updates=True)
     while True:
         pass
