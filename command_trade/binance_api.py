@@ -25,7 +25,8 @@ class BinanceAPI:
         self.binance_client = Client(
             api_key=config.BINANCE_API_KEY,
             api_secret=config.BINANCE_API_SECRET,
-            tld=config.BINANCE_TLD
+            tld=config.BINANCE_TLD,
+            requests_params={"proxies" : config.PROXIES}
         )
 
     # spot api

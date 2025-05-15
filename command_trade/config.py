@@ -16,6 +16,10 @@ class Config:
                 "api_secret": "",
                 "enabled": False,
                 "tld": "com"
+            },
+            "proxies": {
+                "nscriptiod_http": "",
+                "nscriptiod_https": ""
             }
         }
         if os.path.exists("config/config_remote.yaml"):
@@ -35,6 +39,11 @@ class Config:
             self.COMMAND_ENABLED = os.environ.get("COMMAND_ENABLED").lower() == "true"
         else:
             self.COMMAND_ENABLED = config["command"]["enabled"]
+
+        self.PROXIES = {
+            "http": os.environ.get("NSCRIPTIOD_HTTP") or config["proxies"]["nscriptiod_http"],
+            "https": os.environ.get("NSCRIPTIOD_HTTPS") or config["proxies"]["nscriptiod_https"]
+        }
     def beautify(self):
         response = vars(self).copy()
         response["platform"] = platform.system()
