@@ -9,6 +9,7 @@ class Config:
                 "bot_token": "",
                 "pnl_chat_id": 0,
                 "roi_signal": 10,
+                "group_chat_id": 10,
                 "me": ""
             },
             "command": {
