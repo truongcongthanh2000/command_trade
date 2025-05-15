@@ -7,14 +7,13 @@ from .command import Command
 from datetime import datetime
 import pytz
 import json
-import apprise
 from telegram.ext import Application, CommandHandler
 from telegram import Update
 
 def main():
     config = Config()
     logger = Logger(config, "command_trade_server")
-    logger.info(Message(title = f"Start Command Trade - Time: {datetime.fromtimestamp(int(time.time()), tz=pytz.timezone('Asia/Ho_Chi_Minh'))}", body=f"{json.dumps(config.beautify(), indent=2)}", format=apprise.NotifyFormat.TEXT), True)
+    logger.info(Message(title = f"Start Command Trade - Time: {datetime.fromtimestamp(int(time.time()), tz=pytz.timezone('Asia/Ho_Chi_Minh'))}", body=f"{json.dumps(config.beautify(), indent=2)}"), True)
 
     binanceAPI = BinanceAPI(config, logger)
     command = Command(config, logger, binance_api=binanceAPI)

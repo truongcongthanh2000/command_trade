@@ -16,7 +16,7 @@ A command-line interface (CLI) trading bot for automating trades on cryptocurren
 - This repo is developed on Python version >= 3.10
 - **Clone this repo**:  https://github.com/truongcongthanh2000/command_trade
 - Add file config
-    - Setup bot telegram and then create new file apprise.yaml and add url telegram ```tgram://{bot_token}/{chat_id}}?format=html&mdv=v2```, more detail you can check [here](https://github.com/caronc/apprise/wiki/Notify_telegram).
+    - Setup bot telegram and chat_id [how to get chat_id telegram](https://gist.github.com/nafiesl/4ad622f344cd1dc3bb1ecbe468ff9f8a)
     - Create new file config_remote.yaml and fill some fields related to api_key, api_secret, ...
 - Install all dependencies ```pip3 install -r requirements.txt```
 - Run code ```python3 -m command_trade```

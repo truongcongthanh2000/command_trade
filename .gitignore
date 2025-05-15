@@ -1,5 +1,4 @@
 __pycache__
 .vscode
 logs/command_trade_server.log
-config/apprise.yaml
 config/config_remote.yaml

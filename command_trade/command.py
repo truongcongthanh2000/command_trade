@@ -6,7 +6,6 @@ from telegram import Update, LinkPreviewOptions, MessageEntity
 import telegramify_markdown
 from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
-import apprise
 import requests
 from .binance_api import BinanceAPI
 import json
@@ -41,7 +40,7 @@ class Command:
             self.logger.error(Message(
                 title=f"Error Command.help - {update}",
                 body=f"Error: {err=}", 
-                format=apprise.NotifyFormat.TEXT
+                format=None
             ), True)
     
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -53,7 +52,7 @@ class Command:
             self.logger.error(Message(
                 title=f"Error Command.start - {update}",
                 body=f"Error: {err=}", 
-                format=apprise.NotifyFormat.TEXT
+                format=None
             ), True)
     
     async def info(self, update: Update, context: ContextTypes.DEFAULT_TYPE): # info current spot/future account, ex: balance, pnl, orders, ...
@@ -65,7 +64,7 @@ class Command:
             self.logger.error(Message(
                 title=f"Error Command.faccount - {update}",
                 body=f"Error: {err=}", 
-                format=apprise.NotifyFormat.TEXT
+                format=None
             ), True)
     
     # forder buy/sell coin leverage margin sl(optional) tp(optional)
@@ -87,7 +86,7 @@ class Command:
                     self.logger.error(Message(
                         title=f"Error Command.forder - {batch_orders[idx]['side']} - {batch_orders[idx]['type']} - {symbol}",
                         body=f"Error: {responses[idx]['msg']}",
-                        format=apprise.NotifyFormat.TEXT
+                        format=None
                     ), True)
                     ok = False
             if ok:
@@ -96,7 +95,7 @@ class Command:
             self.logger.error(Message(
                 title=f"Error Command.forder - {side} - {symbol} - {leverage} - {margin}",
                 body=f"Error: {err=}", 
-                format=apprise.NotifyFormat.TEXT
+                format=None
             ), True)
     
     # fclose coin
@@ -113,7 +112,7 @@ class Command:
                     self.logger.error(Message(
                         title=f"Error Command.forder - {batch_orders[idx]['side']} - {batch_orders[idx]['type']} - {symbol}",
                         body=f"Error: {responses[idx]['msg']}",
-                        format=apprise.NotifyFormat.TEXT
+                        format=None
                     ), True)
                     ok = False
             if ok:
@@ -136,7 +135,7 @@ class Command:
             self.logger.error(Message(
                 title=f"Error Command.fclose - {symbol}",
                 body=f"Error: {err=}", 
-                format=apprise.NotifyFormat.TEXT
+                format=None
             ), True)
 
     # fch coin interval(optional, default=15m) range(optional, default=21 * interval)
@@ -155,7 +154,7 @@ class Command:
             self.logger.error(Message(
                 title=f"Error Command.fchart - {symbol}",
                 body=f"Error: {err=}", 
-                format=apprise.NotifyFormat.TEXT
+                format=None
             ), True)
 
     # fp coin1 coin2 ....
@@ -173,7 +172,7 @@ class Command:
             self.logger.error(Message(
                 title=f"Error Command.fprice - {symbol}",
                 body=f"Error: {err=}", 
-                format=apprise.NotifyFormat.TEXT
+                format=None
             ), True)
 
     # fstats interval(seconds)
@@ -186,7 +185,7 @@ class Command:
             self.logger.error(Message(
                 title=f"Error Command.fstats - {interval}",
                 body=f"Error: {err=}", 
-                format=apprise.NotifyFormat.TEXT
+                format=None
             ), True)
 
     async def f_get_stats(self, context: ContextTypes.DEFAULT_TYPE):
@@ -210,7 +209,7 @@ class Command:
         self.logger.error(Message(
             title=f"Error Command.Update {update}",
             body=f"Error Msg: {context.error}",
-            format=apprise.NotifyFormat.TEXT
+            format=None
         ), True)
 
     def info_spot(self):

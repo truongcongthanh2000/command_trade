@@ -9,7 +9,7 @@ class Logger:
 
     def __init__(self, config: Config, logging_service="crypto_trading", enable_notifications=True):
         # Logger setup
-        self.Logger = logging.getLogger("apprise")
+        self.Logger = logging.getLogger(logging_service)
         self.Logger.setLevel(logging.DEBUG)
         self.Logger.propagate = False
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
