@@ -8,3 +8,4 @@ matplotlib==3.10.3
 mplfinance==0.12.10b0
 telegramify-markdown==0.5.1
 pyTelegramBotAPI==4.27.0
+PyYAML==6.0.1
