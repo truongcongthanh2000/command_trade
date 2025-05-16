@@ -101,6 +101,7 @@ class Command:
             symbol = coin + "USDT"
             # change leverage for symbol first
             self.binance_api.f_change_leverage(symbol, leverage)
+            self.binance_api.f_change_margin_type(symbol) # set marginType = CROSSED
             batch_orders = self.f_get_orders(side, symbol, leverage, margin, context)
             self.logger.info(Message(f"👋 Your order for {symbol} is {json.dumps(batch_orders)}"))
             responses = self.binance_api.f_batch_order(batch_orders)

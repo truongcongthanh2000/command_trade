@@ -64,6 +64,9 @@ class BinanceAPI:
     def f_batch_order(self, batch_orders: list[dict]):
         return self.binance_client.futures_place_batch_order(batchOrders=batch_orders)
     
+    def f_change_margin_type(self, symbol: str, marginType: str = "CROSSED"):
+        self.binance_client.futures_change_margin_type(symbol=symbol, marginType=marginType)
+
     def f_change_leverage(self, symbol: str, leverage: int):
         return self.binance_client.futures_change_leverage(symbol=symbol, leverage=leverage)
 
