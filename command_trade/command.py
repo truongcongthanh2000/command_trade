@@ -75,6 +75,7 @@ class Command:
             # change leverage for symbol first
             self.binance_api.f_change_leverage(symbol, leverage)
             batch_orders = self.f_get_orders(side, symbol, leverage, margin, context)
+            self.logger.info(Message(f"👋 Your order for {symbol} is {json.dumps(batch_orders)}"))
             responses = self.binance_api.f_batch_order(batch_orders)
             ok = True
             for idx in range(len(responses)):
@@ -99,6 +100,7 @@ class Command:
         try:
             symbol = coin + "USDT"
             batch_orders = self.f_get_close_positions(symbol)
+            self.logger.info(Message(f"👋 Your close positions for {symbol} is {json.dumps(batch_orders)}"))
             responses = self.binance_api.f_batch_order(batch_orders)
             ok = True
             for idx in range(len(responses)):
