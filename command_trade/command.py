@@ -5,7 +5,7 @@ from .util import remove_job_if_exists
 from telegram import Update, LinkPreviewOptions, MessageEntity
 import telegramify_markdown
 from telegram.constants import ParseMode
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, Application
 import requests
 from .binance_api import BinanceAPI
 import json
@@ -24,6 +24,33 @@ class Command:
         self.config = config
         self.logger = logger
         self.binance_api = binance_api
+
+    async def post_init(self, application: Application):
+        self.logger.info("Start server")
+        await application.bot.set_my_commands([
+            ('help', 'Get all commands'),
+            ('start', 'Get public, local IP of the server'),
+            ('info', 'Get current trade, balance and pnl'),
+            ('forder', 'forder buy/sell coin leverage margin sl(opt) tp(opt)'),
+            ('fclose', 'fclose coin'),
+            ('fch', "Get chart 'fch coin interval(opt, df=15m) range(opt, df=21 * interval)'"),
+            ('fp', "Get prices 'fp coin1 coin2 ....'"),
+            ('fstats', "Schedule get stats 'fstats interval(seconds)'"),
+        ])
+        try:
+            commands = await application.bot.get_my_commands()
+            public_ip = requests.get('https://api.ipify.org', proxies=self.config.PROXIES).text
+            msg = f"👋 **Start Command Trade - Time: {datetime.fromtimestamp(int(time.time()), tz=pytz.timezone('Asia/Ho_Chi_Minh'))}**\n"
+            msg += f"**Your server public IP is `{public_ip}`, here is list commands:**\n"
+            for command in commands:
+                msg += f"/{command.command} - {command.description}\n"
+            msg += json.dumps(self.config.beautify(), indent=2)
+            await application.bot.send_message(self.config.TELEGRAM_PNL_CHAT_ID, text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error post_init",
+                body=f"Error: {err=}", 
+            ), True)
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = "/start - Get public, local IP of the server\n"

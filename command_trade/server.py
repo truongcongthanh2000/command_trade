@@ -13,12 +13,10 @@ from telegram import Update
 def main():
     config = Config()
     logger = Logger(config, "command_trade_server")
-    logger.info(Message(title = f"Start Command Trade - Time: {datetime.fromtimestamp(int(time.time()), tz=pytz.timezone('Asia/Ho_Chi_Minh'))}", body=f"{json.dumps(config.beautify(), indent=2)}"), True)
-
     binanceAPI = BinanceAPI(config, logger)
     command = Command(config, logger, binance_api=binanceAPI)
     if config.COMMAND_ENABLED == True:
-        application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).read_timeout(7).get_updates_read_timeout(42).build()
+        application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).read_timeout(7).get_updates_read_timeout(42).post_init(command.post_init).build()
         application.add_handler(CommandHandler("help", command.help))
         application.add_handler(CommandHandler("start", command.start))
         application.add_handler(CommandHandler("info", command.info))
