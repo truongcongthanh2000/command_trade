@@ -230,7 +230,7 @@ class Command:
         if skip_info_when_no_positions == True and len(positions) == 0:
             return ("", 0, 0)
         for position in positions:
-            symbol = position["symbol"]
+            symbol = str(position["symbol"])
             url = f"https://www.binance.com/en/futures/{symbol}"
             amount = float(position["positionAmt"])
             if abs(amount) <= EPS: # Open orders
@@ -241,7 +241,8 @@ class Command:
                 position_type = "**SHORT**"
             info_position = f"[{symbol}]({url}): {position_type} **{abs(round(float(position['notional']) / float(position['initialMargin'])))}x**, margin: **${position['initialMargin']}**\n"
             info_position += f"- entryPrice: **${position['entryPrice']}**, marketPrice: **${position['markPrice']}**\n"
-            info_position += f"- PNL: **${float(position['unRealizedProfit']):.2f}**, ROI: **{round(float(position['unRealizedProfit']) / float(position['initialMargin']) * 100.0, 2)}%**\n\n"
+            info_position += f"- PNL: **${float(position['unRealizedProfit']):.2f}**, ROI: **{round(float(position['unRealizedProfit']) / float(position['initialMargin']) * 100.0, 2)}%**\n"
+            info_position += f"- Close position: `/fclose {symbol.removesuffix('USDT')}`\n\n"
             info += info_position
 
         info += "\n"
