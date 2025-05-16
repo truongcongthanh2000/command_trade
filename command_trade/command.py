@@ -45,7 +45,7 @@ class Command:
             for command in commands:
                 msg += f"/{command.command} - {command.description}\n"
             msg += json.dumps(self.config.beautify(), indent=2)
-            await application.bot.send_message(self.config.TELEGRAM_PNL_CHAT_ID, text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
+            await application.bot.send_message(self.config.TELEGRAM_GROUP_CHAT_ID, text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error post_init",
