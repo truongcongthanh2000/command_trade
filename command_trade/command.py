@@ -305,7 +305,7 @@ class Command:
                 "type": "MARKET",
                 "side": "BUY" if side_upper == "SELL" else "SELL",
                 "symbol": symbol,
-                "quantity": position["positionAmt"],
+                "quantity": str(position["positionAmt"]).removeprefix('-'),
             }
             batch_orders.append(close_order)
         return batch_orders
