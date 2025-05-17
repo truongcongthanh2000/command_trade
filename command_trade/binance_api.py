@@ -46,6 +46,11 @@ class BinanceAPI:
     def get_futures_account(self):
         return self.binance_client.futures_account()
     
+    def get_position_info(self, symbol: str | None = None): # include leverage, marginType
+        if symbol is None:
+            return self.binance_client.futures_position_information(version=2)
+        return self.binance_client.futures_position_information(symbol=symbol, version=2)
+
     def get_current_position(self, symbol: str | None = None):
         if symbol is None:
             return self.binance_client.futures_position_information()

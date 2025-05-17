@@ -99,9 +99,8 @@ class Command:
         margin = float(context.args[3])
         try:
             symbol = coin + "USDT"
-            # change leverage for symbol first
-            self.binance_api.f_change_leverage(symbol, leverage)
-            self.binance_api.f_change_margin_type(symbol) # set marginType = CROSSED
+            # try to change leverage and margin_type for symbol first
+            self.f_set_leverage_and_margin_type(symbol, leverage)
             batch_orders = self.f_get_orders(side, symbol, leverage, margin, context)
             self.logger.info(Message(f"👋 Your order for {symbol} is {json.dumps(batch_orders)}"))
             responses = self.binance_api.f_batch_order(batch_orders)
@@ -375,3 +374,10 @@ class Command:
         chat_id = self.config.TELEGRAM_PNL_CHAT_ID
         remove_job_if_exists(str(chat_id), context)
         context.job_queue.run_repeating(self.f_get_stats, interval=interval, first=0)
+
+    def f_set_leverage_and_margin_type(self, symbol: str, leverage: int = 10, margin_type: str = 'CROSSED'):
+        position_info = self.binance_api.get_position_info(symbol)
+        if int(position_info["leverage"]) != leverage:
+            self.binance_api.f_change_leverage(symbol, leverage)
+        if (position_info["marginType"] == "cross" and margin_type != "CROSSED") or (position_info["marginType"] == "isolated" and margin_type != "ISOLATED"):
+            self.binance_api.f_change_margin_type(symbol, margin_type)
