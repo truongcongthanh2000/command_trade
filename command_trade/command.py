@@ -270,17 +270,21 @@ class Command:
                 position_type = "**SHORT**"
             info_position = f"[{symbol}]({url}): {position_type} **{abs(round(float(position['notional']) / float(position['positionInitialMargin'])))}x**, margin: **${position['positionInitialMargin']}**\n"
             info_position += f"- entryPrice: **${position['entryPrice']}**, marketPrice: **${position['markPrice']}**\n"
-            info_position += f"- PNL: **${float(position['unRealizedProfit']):.2f}**, ROI: **{round(float(position['unRealizedProfit']) / float(position['positionInitialMargin']) * 100.0, 2)}%**, openOrderMargin: **{position['openOrderInitialMargin']}**\n"
+            info_position += f"- PNL: **${float(position['unRealizedProfit']):.2f}**, ROI: **{round(float(position['unRealizedProfit']) / float(position['positionInitialMargin']) * 100.0, 2)}%**"
+            if float(position['openOrderInitialMargin']) > EPS:
+                info_position += f", openMargin: **{position['openOrderInitialMargin']}**\n"
+            else:
+                info_position += "\n"
             info_position += f"- Close position: `/fclose {symbol.removesuffix('USDT')}`\n\n"
             info += info_position
 
         info += "\n"
-        info += f"**Before Total Balance**: ${float(account_info['totalWalletBalance']):.2f}\n"
-        info += f"**Total Initial Margin**: ${float(account_info['totalInitialMargin']):.2f} (Position: ${float(account_info['totalPositionInitialMargin']):.2f}, Open: ${float(account_info['totalOpenOrderInitialMargin']):.2f})\n"
-        info += f"**Available Balance**: ${float(account_info['availableBalance']):.2f}\n\n"
-        info += f"**Total Unrealized Profit**: ${float(account_info['totalUnrealizedProfit']):.2f}\n"
-        info += f"**Total ROI**: {round(float(account_info['totalUnrealizedProfit']) / float(account_info['totalWalletBalance']) * 100, 2)}%\n"
-        info += f"**After Total Balance**: ${float(account_info['totalMarginBalance']):.2f}"
+        info += f"**Before Total Balance**: **${float(account_info['totalWalletBalance']):.2f}**\n"
+        info += f"**Total Initial Margin**: **${float(account_info['totalInitialMargin']):.2f}** (Position: **${float(account_info['totalPositionInitialMargin']):.2f}**, Open: **${float(account_info['totalOpenOrderInitialMargin']):.2f}**)\n"
+        info += f"**Available Balance**: **${float(account_info['availableBalance']):.2f}**\n\n"
+        info += f"**Total Unrealized Profit**: **${float(account_info['totalUnrealizedProfit']):.2f}**\n"
+        info += f"**Total ROI**: **{round(float(account_info['totalUnrealizedProfit']) / float(account_info['totalWalletBalance']) * 100, 2)}%**\n"
+        info += f"**After Total Balance**: **${float(account_info['totalMarginBalance']):.2f}**"
         return (info, round(float(account_info['totalUnrealizedProfit']) / float(account_info['totalWalletBalance']) * 100, 2), round(float(account_info['totalUnrealizedProfit']), 2))
     
     def f_get_orders(self, side: str, symbol: str, leverage: int, margin: float, context: ContextTypes.DEFAULT_TYPE):
