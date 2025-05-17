@@ -272,7 +272,7 @@ class Command:
             info_position += f"- entryPrice: **${position['entryPrice']}**, marketPrice: **${position['markPrice']}**\n"
             info_position += f"- PNL: **${float(position['unRealizedProfit']):.2f}**, ROI: **{round(float(position['unRealizedProfit']) / float(position['positionInitialMargin']) * 100.0, 2)}%**"
             if float(position['openOrderInitialMargin']) > EPS:
-                info_position += f", openMargin: **{position['openOrderInitialMargin']}**\n"
+                info_position += f", openMargin: **${position['openOrderInitialMargin']}**\n"
             else:
                 info_position += "\n"
             info_position += f"- Close position: `/fclose {symbol.removesuffix('USDT')}`\n\n"
