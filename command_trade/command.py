@@ -376,7 +376,7 @@ class Command:
         context.job_queue.run_repeating(self.f_get_stats, interval=interval, first=0)
 
     def f_set_leverage_and_margin_type(self, symbol: str, leverage: int = 10, margin_type: str = 'CROSSED'):
-        position_info = self.binance_api.get_position_info(symbol)
+        position_info = self.binance_api.get_position_info(symbol)[0]
         if int(position_info["leverage"]) != leverage:
             self.binance_api.f_change_leverage(symbol, leverage)
         if (position_info["marginType"] == "cross" and margin_type != "CROSSED") or (position_info["marginType"] == "isolated" and margin_type != "ISOLATED"):
