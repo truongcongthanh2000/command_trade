@@ -262,8 +262,6 @@ class Command:
             symbol = str(position["symbol"])
             url = f"https://www.binance.com/en/futures/{symbol}"
             amount = float(position["positionAmt"])
-            if abs(amount) <= EPS: # Open orders
-                continue
             if amount > 0:
                 position_type = "**BUY**"
             else:
