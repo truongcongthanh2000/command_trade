@@ -66,6 +66,9 @@ class BinanceAPI:
     def f_exchange_info(self):
         return self.binance_client.futures_exchange_info()
 
+    def f_order(self, order: dict):
+        return self.binance_client.futures_create_order(side=order["side"], type=order["type"], symbol=order["symbol"], quantity=order["quantity"], timeInForce=order["timeInForce"], price=order["price"])
+
     def f_batch_order(self, batch_orders: list[dict]):
         return self.binance_client.futures_place_batch_order(batchOrders=batch_orders)
     
