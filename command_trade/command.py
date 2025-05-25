@@ -289,7 +289,7 @@ class Command:
         tb_string = "".join(tb_list)
         self.logger.error(Message(f"Exception while handling an update:, exc_info={tb_string}"))
 
-        if str(context.error) != "httpx.ReadError":
+        if "httpx.ReadError" not in str(context.error):
             self.logger.error(Message(
                 title=f"Error Command.Update {update}",
                 body=f"Error Msg: {context.error}",
