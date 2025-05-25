@@ -289,10 +289,11 @@ class Command:
         tb_string = "".join(tb_list)
         self.logger.error(Message(f"Exception while handling an update:, exc_info={tb_string}"))
 
-        self.logger.error(Message(
-            title=f"Error Command.Update {update}",
-            body=f"Error Msg: {context.error}",
-        ), True)
+        if context.error != "httpx.ReadError":
+            self.logger.error(Message(
+                title=f"Error Command.Update {update}",
+                body=f"Error Msg: {context.error}",
+            ), True)
 
     def info_spot(self):
         account_info = self.binance_api.get_account()
