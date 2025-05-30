@@ -27,6 +27,8 @@ def main():
         application.add_handler(CommandHandler("fstats", command.fstats))
         application.add_handler(CommandHandler("flimit", command.flimit))
         application.add_handler(CommandHandler("ftpsl", command.ftpsl))
+        application.add_handler(CommandHandler("falert", command.falert))
+        application.add_handler(CommandHandler("falert_track", command.falert_track))
         application.add_error_handler(command.error)
         application.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
     while True:

@@ -17,6 +17,24 @@ import io
 from datetime import datetime
 import time
 import pytz
+import asyncio
+
+JOB_NAME_FSTATS = "fstats"
+JOB_NAME_FALERT_TRACK = "falert_track"
+class PriceAlert:
+    def __init__(self, op: str, price: float, gap: float = 0.5):
+        self.op = op
+        self.price = price
+        self.gap = gap
+    def __str__(self):
+        return self.op + " " + str(self.price) + f" ({self.gap}%)"
+    def equal(self, price: float):
+        if (abs(self.price - price) / self.price) <= self.gap / 100.0: # check around gap%
+            return True
+        if self.op == '<':
+            return price <= self.price
+        else:
+            return price >= self.price
 
 EPS = 1e-2
 class Command:
@@ -24,7 +42,8 @@ class Command:
         self.config = config
         self.logger = logger
         self.binance_api = binance_api
-
+        self.map_alert_price = {}
+        
     async def post_init(self, application: Application):
         self.logger.info("Start server")
         await application.bot.set_my_commands([
@@ -37,7 +56,9 @@ class Command:
             ('fp', "Get prices 'fp coin1 coin2 ....'"),
             ('fstats', "Schedule get stats 'fstats interval(seconds)'"),
             ('flimit', 'flimit buy/sell coin leverage margin price'),
-            ('ftpsl', "Set tp/sl position 'ftpsl coin sl(optional) tp(optional)")
+            ('ftpsl', "Set tp/sl position 'ftpsl coin sl(optional) tp(optional)"),
+            ('falert', "falert op1:coin1:price1(:gap1, default=0.5%) ..."),
+            ('falert_track', "Tracking all alert price 'falert_track intervals(seconds)'"),
         ])
         try:
             commands = await application.bot.get_my_commands()
@@ -63,7 +84,9 @@ class Command:
         msg += "/fp - Get prices 'fp coin1 coin2 ....'\n"
         msg += "/fstats - Schedule get stats for current positions 'fstats interval(seconds)'\n"
         msg += "/flimit - Make futures limit order 'flimit buy/sell coin leverage margin price'\n"
-        msg += "/ftpsl - Set tp/sl position 'ftpsl coin sl(optional) tp(optional)'"
+        msg += "/ftpsl - Set tp/sl position 'ftpsl coin sl(optional) tp(optional)'\n"
+        msg += "/falert - Set alert price 'falert op1:coin1:price1(:gap1, default=0.5%) ...'\n"
+        msg += "/falert_track - Tracking all alert price 'falert_track intervals(seconds)'"
         """Handles command /help from the admin"""
         try:
             await update.message.reply_text(text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2)
@@ -270,16 +293,83 @@ class Command:
                 body=f"Error: {err=}", 
             ), True)
 
+    # falert op1:coin1:price1(:gap1, default=0.5%) op2:coin2:price2(:gap2, default=0.5%)...
+    async def falert(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        try:
+            list_symbol = []
+            for input in context.args:
+                list_symbol.append(self.f_alert(input))
+            await update.message.reply_text(text=telegramify_markdown.markdownify(f"👋 Your set alert for **{', '.join(list_symbol)}** successfully\nCommand `/falert_track` interval(seconds) for tracking alert."), parse_mode=ParseMode.MARKDOWN_V2)
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.falert - {' '.join(context.args)}",
+                body=f"Error: {err=}", 
+            ), True)
 
+    # add alert into map, format = op:coin:price(:gap, default=0.5%)
+    def f_alert(self, input: str):
+        array = input.split(':')
+        if len(array) < 3:
+            raise Exception(f"Format should be op:coin:price or op:coin:price:gap, original input: {input}")
+        op = array[0]
+        coin = array[1].upper()
+        price = float(array[2])
+        gap = 0.5
+        if len(array) == 4:
+            gap = float(array[4])
+        symbol = coin + "USDT"
+        self.map_alert_price[symbol] = PriceAlert(op, price, gap)
+        return symbol
+
+    # falert_track intervals(seconds)
+    async def falert_track(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        interval = int(context.args[0])
+        try:
+            self.f_alert_track(interval, context)
+            await update.message.reply_text(f"Your alert is tracking, interval={interval}s")
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.falert_track - {interval}",
+                body=f"Error: {err=}", 
+            ), True)
+
+    async def f_get_alert_track(self, context: ContextTypes.DEFAULT_TYPE):
+        chat_id = self.config.TELEGRAM_GROUP_CHAT_ID
+        if len(self.map_alert_price) == 0:
+            remove_job_if_exists(JOB_NAME_FALERT_TRACK, context)
+            await context.bot.send_message(chat_id, text=telegramify_markdown.markdownify("👋 You don't have any alert for tracking at this time!\nJob was removed, please command `/falert_track` interval(seconds) when create a new alert."), parse_mode=ParseMode.MARKDOWN_V2)
+            return
+        msg = ""
+        list_symbol = []
+        for symbol, price_alert in self.map_alert_price.items():
+            ticker_24h = self.binance_api.f_24hr_ticker(symbol)
+            symbol_price = float(ticker_24h['lastPrice'])
+            if price_alert.equal(symbol_price) == False:
+                continue
+            if len(msg) > 0:
+                msg += '---------------------\n'
+            list_symbol.append(symbol)
+            msg += f"🔔 Alert **{symbol}**, setup: **{str(price_alert)}**, chart: `/fch {symbol.removesuffix('USDT')}`\n\n"
+            msg = msg + self.build_caption(f"https://www.binance.com/en/futures/{symbol}", symbol, ticker_24h)
+        if msg != "":
+            for symbol in list_symbol:
+                self.map_alert_price.pop(symbol, 'None')
+            msg = f"🔔 Price alert {self.config.TELEGRAM_ME}, list: **{', '.join(list_symbol)}**\n\n" + msg
+            await context.bot.send_message(chat_id, text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
+        await asyncio.sleep(1)
+    
     async def f_get_stats(self, context: ContextTypes.DEFAULT_TYPE):
         info, totalROI, pnl = self.info_future(True)
+        chat_id = self.config.TELEGRAM_PNL_CHAT_ID
         if info == "":
+            remove_job_if_exists(JOB_NAME_FSTATS, context)
+            await context.bot.send_message(chat_id, telegramify_markdown.markdownify("👋 You don't have positions at this time!\nJob was removed, please command `/fstats` interval(seconds) when create a new position/order."), parse_mode=ParseMode.MARKDOWN_V2)
             return
         msg = ""
         if abs(totalROI) >= self.config.TELEGRAM_ROI_SIGNAL: # notify me when signal totalROI >= 10%
             msg += f"{self.config.TELEGRAM_ME} - **${pnl}**\n"
         msg += f"**{datetime.fromtimestamp(int(time.time()), tz=pytz.timezone('Asia/Ho_Chi_Minh'))}** - " + info
-        await context.bot.send_message(self.config.TELEGRAM_PNL_CHAT_ID, text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
+        await context.bot.send_message(chat_id, text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
     
     async def error(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Log the error and send a telegram message to notify the developer."""
@@ -487,9 +577,12 @@ class Command:
         return caption_msg
     
     def f_stats(self, interval: int, context: ContextTypes.DEFAULT_TYPE):
-        chat_id = self.config.TELEGRAM_PNL_CHAT_ID
-        remove_job_if_exists(str(chat_id), context)
-        context.job_queue.run_repeating(self.f_get_stats, interval=interval, first=0)
+        remove_job_if_exists(JOB_NAME_FSTATS, context)
+        context.job_queue.run_repeating(self.f_get_stats, interval=interval, first=0, name=JOB_NAME_FSTATS)
+    
+    def f_alert_track(self, interval: int, context: ContextTypes.DEFAULT_TYPE):
+        remove_job_if_exists(JOB_NAME_FALERT_TRACK, context)
+        context.job_queue.run_repeating(self.f_get_alert_track, interval=interval, first=0, name=JOB_NAME_FALERT_TRACK)
 
     def f_set_leverage_and_margin_type(self, symbol: str, leverage: int = 10, margin_type: str = 'CROSSED'):
         position_info = self.binance_api.get_position_info(symbol)[0]
