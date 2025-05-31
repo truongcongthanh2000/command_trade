@@ -316,7 +316,7 @@ class Command:
         price = float(array[2])
         gap = 0.5
         if len(array) == 4:
-            gap = float(array[4])
+            gap = float(array[3])
         symbol = coin + "USDT"
         self.map_alert_price[symbol] = PriceAlert(op, price, gap)
         return symbol
