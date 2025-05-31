@@ -18,6 +18,7 @@ from datetime import datetime
 import time
 import pytz
 import asyncio
+from collections import defaultdict
 
 JOB_NAME_FSTATS = "fstats"
 JOB_NAME_FALERT_TRACK = "falert_track"
@@ -42,7 +43,7 @@ class Command:
         self.config = config
         self.logger = logger
         self.binance_api = binance_api
-        self.map_alert_price = {}
+        self.map_alert_price = defaultdict(list)
         
     async def post_init(self, application: Application):
         self.logger.info("Start server")
@@ -59,6 +60,7 @@ class Command:
             ('ftpsl', "Set tp/sl position 'ftpsl coin sl(optional) tp(optional)"),
             ('falert', "falert op1:coin1:price1(:gap1, default=0.5%) ..."),
             ('falert_track', "Tracking all alert price 'falert_track intervals(seconds)'"),
+            ('falert_list', "List all current alert"),
         ])
         try:
             commands = await application.bot.get_my_commands()
@@ -87,6 +89,7 @@ class Command:
         msg += "/ftpsl - Set tp/sl position 'ftpsl coin sl(optional) tp(optional)'\n"
         msg += "/falert - Set alert price 'falert op1:coin1:price1(:gap1, default=0.5%) ...'\n"
         msg += "/falert_track - Tracking all alert price 'falert_track intervals(seconds)'"
+        msg += "/falert_list - List all current alert"
         """Handles command /help from the admin"""
         try:
             await update.message.reply_text(text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2)
@@ -318,7 +321,7 @@ class Command:
         if len(array) == 4:
             gap = float(array[3])
         symbol = coin + "USDT"
-        self.map_alert_price[symbol] = PriceAlert(op, price, gap)
+        self.map_alert_price[symbol].append(PriceAlert(op, price, gap))
         return symbol
 
     # falert_track intervals(seconds)
@@ -332,6 +335,25 @@ class Command:
                 title=f"Error Command.falert_track - {interval}",
                 body=f"Error: {err=}", 
             ), True)
+    
+    # falert_list
+    async def falert_list(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        chat_id = self.config.TELEGRAM_GROUP_CHAT_ID
+        try:
+            msg = ""
+            for symbol in self.map_alert_price:
+                if len(msg) > 0:
+                    msg += '---------------------\n'
+                msg += f"👉 **{symbol}**\n"
+                for price_alert in self.map_alert_price[symbol]:
+                    msg += f"- **{str(price_alert)}**\n"
+            msg = "🔔 Here is your list alert:\n" + msg
+            await context.bot.send_message(chat_id, text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.falert_list",
+                body=f"Error: {err=}", 
+            ), True)
 
     async def f_get_alert_track(self, context: ContextTypes.DEFAULT_TYPE):
         chat_id = self.config.TELEGRAM_GROUP_CHAT_ID
@@ -341,19 +363,30 @@ class Command:
             return
         msg = ""
         list_symbol = []
-        for symbol, price_alert in self.map_alert_price.items():
+        list_removed = []
+        for symbol in self.map_alert_price:
             ticker_24h = self.binance_api.f_24hr_ticker(symbol)
             symbol_price = float(ticker_24h['lastPrice'])
-            if price_alert.equal(symbol_price) == False:
-                continue
-            if len(msg) > 0:
-                msg += '---------------------\n'
-            list_symbol.append(symbol)
-            msg += f"🔔 Alert **{symbol}**, setup: **{str(price_alert)}**, chart: `/fch {symbol.removesuffix('USDT')}`\n\n"
-            msg = msg + self.build_caption(f"https://www.binance.com/en/futures/{symbol}", symbol, ticker_24h)
+            list_index_remove = []
+            for idx, price_alert in enumerate(self.map_alert_price[symbol]):
+                if price_alert.equal(symbol_price) == False:
+                    continue
+                if len(msg) > 0 and len(list_index_remove) == 0:
+                    msg += '---------------------\n'
+                list_index_remove.append(idx)
+                msg += f"🔔 Alert **{symbol}**, setup: **{str(price_alert)}**, chart: `/fch {symbol.removesuffix('USDT')}`\n"
+            if len(list_index_remove) > 0:
+                list_symbol.append(symbol)
+                for idx in sorted(list_index_remove, reverse=True):
+                    list_removed.append((symbol, idx))
+                msg = msg + '\n' + self.build_caption(f"https://www.binance.com/en/futures/{symbol}", symbol, ticker_24h)
         if msg != "":
-            for symbol in list_symbol:
-                self.map_alert_price.pop(symbol, 'None')
+            for removed in list_removed:
+                symbol = removed[0]
+                idx = removed[1]
+                self.map_alert_price[symbol].pop(idx)
+                if len(self.map_alert_price[symbol]) == 0:
+                    self.map_alert_price.pop(symbol, 'None')
             msg = f"🔔 Price alert {self.config.TELEGRAM_ME}, list: **{', '.join(list_symbol)}**\n\n" + msg
             await context.bot.send_message(chat_id, text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
         await asyncio.sleep(1)
