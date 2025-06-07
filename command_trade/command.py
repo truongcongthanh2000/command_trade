@@ -58,9 +58,10 @@ class Command:
             ('fstats', "Schedule get stats 'fstats interval(seconds)'"),
             ('flimit', 'flimit buy/sell coin leverage margin price'),
             ('ftpsl', "Set tp/sl position 'ftpsl coin sl(optional) tp(optional)"),
-            ('falert', "falert op1:coin1:price1(:gap1, default=0.5%) ..."),
+            ('falert', "falert op1:coin1:price1_1,price1_2,...(:gap1, default=0.5%) ..."),
             ('falert_track', "Tracking all alert price 'falert_track intervals(seconds)'"),
             ('falert_list', "List all current alert"),
+            ('falert_remove', "Remove alert 'falert_remove all; coin1:all/index0,index1,... coin2:all/index0,index1,...'")
         ])
         try:
             commands = await application.bot.get_my_commands()
@@ -87,9 +88,10 @@ class Command:
         msg += "/fstats - Schedule get stats for current positions 'fstats interval(seconds)'\n"
         msg += "/flimit - Make futures limit order 'flimit buy/sell coin leverage margin price'\n"
         msg += "/ftpsl - Set tp/sl position 'ftpsl coin sl(optional) tp(optional)'\n"
-        msg += "/falert - Set alert price 'falert op1:coin1:price1(:gap1, default=0.5%) ...'\n"
-        msg += "/falert_track - Tracking all alert price 'falert_track intervals(seconds)'"
-        msg += "/falert_list - List all current alert"
+        msg += "/falert - Set alert price 'falert op1:coin1:price1_1,price1_2,...(:gap1, default=0.5%) ...'\n"
+        msg += "/falert_track - Tracking all alert price 'falert_track intervals(seconds)'\n"
+        msg += "/falert_list - List all current alert\n"
+        msg += "/falert_remove - Remove alert 'falert_remove all; coin1:all/index0,index1,... coin2:all/index0,index1,...'"
         """Handles command /help from the admin"""
         try:
             await update.message.reply_text(text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2)
@@ -296,7 +298,7 @@ class Command:
                 body=f"Error: {err=}", 
             ), True)
 
-    # falert op1:coin1:price1(:gap1, default=0.5%) op2:coin2:price2(:gap2, default=0.5%)...
+    # falert op1:coin1:price1_1,price1_2,...(:gap1, default=0.5%) op2:coin2:price2_1,price2_2,...(:gap2, default=0.5%)...
     async def falert(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             list_symbol = []
@@ -309,19 +311,20 @@ class Command:
                 body=f"Error: {err=}", 
             ), True)
 
-    # add alert into map, format = op:coin:price(:gap, default=0.5%)
+    # add alert into map, format = op:coin:price1,price2,...(:gap, default=0.5%)
     def f_alert(self, input: str):
         array = input.split(':')
         if len(array) < 3:
             raise Exception(f"Format should be op:coin:price or op:coin:price:gap, original input: {input}")
         op = array[0]
         coin = array[1].upper()
-        price = float(array[2])
         gap = 0.5
         if len(array) == 4:
             gap = float(array[3])
         symbol = coin + "USDT"
-        self.map_alert_price[symbol].append(PriceAlert(op, price, gap))
+        for price_str in array[2].split(','):
+            price = float(price_str)
+            self.map_alert_price[symbol].append(PriceAlert(op, price, gap))
         return symbol
 
     # falert_track intervals(seconds)
@@ -338,7 +341,7 @@ class Command:
     
     # falert_list
     async def falert_list(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        chat_id = self.config.TELEGRAM_GROUP_CHAT_ID
+        chat_id = self.config.TELEGRAM_ALERT_CHAT_ID
         try:
             msg = ""
             for symbol in self.map_alert_price:
@@ -354,9 +357,46 @@ class Command:
                 title=f"Error Command.falert_list",
                 body=f"Error: {err=}", 
             ), True)
+    
+    # falert_remove all; coin1:all/index0,index1,... coin2:all/index0,index1,...
+    async def falert_remove(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        chat_id = self.config.TELEGRAM_ALERT_CHAT_ID
+        try:
+            list_symbol = []
+            if len(context.args) == 1 and context.args[0] == 'all':
+                list_symbol.append('all symbol')
+                self.map_alert_price.clear()
+            else:
+                for input in context.args:
+                    list_symbol.append(self.f_alert_remove(input))
+            await update.message.reply_text(text=telegramify_markdown.markdownify(f"👋 Your removed alert for **{', '.join(list_symbol)}** successfully\nCommand `/falert_list` interval(seconds) to see current alert."), parse_mode=ParseMode.MARKDOWN_V2)
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.falert_remove - {' '.join(context.args)}",
+                body=f"Error: {err=}", 
+            ), True)
+    
+    # Format remove: coin:all/index0,index1,...
+    def f_alert_remove(self, input: str):
+        array = input.split(':')
+        if len(array) < 2:
+            raise Exception(f"Format should be coin:all/index0,index1,..., original input: {input}")
+        coin = array[0].upper()
+        symbol = coin + "USDT"
+        params = array[1]
+        if 'a' in params.lower():
+            self.map_alert_price[symbol].clear()
+            self.map_alert_price.pop(symbol, 'None')
+        else:
+            list_idx = [int(idx_str) for idx_str in params.split(',')]
+            for idx_removed in sorted(list_idx, reverse=True):
+                self.map_alert_price[symbol].pop(idx_removed)
+            if len(self.map_alert_price[symbol]) == 0:
+                self.map_alert_price.pop(symbol, 'None')  
+        return symbol              
 
     async def f_get_alert_track(self, context: ContextTypes.DEFAULT_TYPE):
-        chat_id = self.config.TELEGRAM_GROUP_CHAT_ID
+        chat_id = self.config.TELEGRAM_ALERT_CHAT_ID
         if len(self.map_alert_price) == 0:
             remove_job_if_exists(JOB_NAME_FALERT_TRACK, context)
             await context.bot.send_message(chat_id, text=telegramify_markdown.markdownify("👋 You don't have any alert for tracking at this time!\nJob was removed, please command `/falert_track` interval(seconds) when create a new alert."), parse_mode=ParseMode.MARKDOWN_V2)
