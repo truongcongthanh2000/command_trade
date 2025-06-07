@@ -360,7 +360,6 @@ class Command:
     
     # falert_remove all; coin1:all/index0,index1,... coin2:all/index0,index1,...
     async def falert_remove(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        chat_id = self.config.TELEGRAM_ALERT_CHAT_ID
         try:
             list_symbol = []
             if len(context.args) == 1 and context.args[0] == 'all':
@@ -369,7 +368,7 @@ class Command:
             else:
                 for input in context.args:
                     list_symbol.append(self.f_alert_remove(input))
-            await update.message.reply_text(text=telegramify_markdown.markdownify(f"👋 Your removed alert for **{', '.join(list_symbol)}** successfully\nCommand `/falert_list` interval(seconds) to see current alert."), parse_mode=ParseMode.MARKDOWN_V2)
+            await update.message.reply_text(text=telegramify_markdown.markdownify(f"👋 Your removed alert for **{', '.join(list_symbol)}** successfully\nCommand `/falert_list` to see current alert."), parse_mode=ParseMode.MARKDOWN_V2)
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.falert_remove - {' '.join(context.args)}",
