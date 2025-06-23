@@ -75,7 +75,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error post_init",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
 
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -98,7 +99,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.help - {update}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
     
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -109,7 +111,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.start - {update}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
     
     async def info(self, update: Update, context: ContextTypes.DEFAULT_TYPE): # info current spot/future account, ex: balance, pnl, orders, ...
@@ -120,7 +123,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.faccount - {update}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
     
     # forder buy/sell coin leverage margin sl(optional) tp(optional)
@@ -143,6 +147,7 @@ class Command:
                     self.logger.error(Message(
                         title=f"Error Command.forder - {batch_orders[idx]['side']} - {batch_orders[idx]['type']} - {symbol}",
                         body=f"Error: {responses[idx]['msg']}",
+                        chat_id=self.config.TELEGRAM_LOG_PEER_ID
                     ), True)
                     ok = False
             if ok:
@@ -150,7 +155,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.forder - {side} - {symbol} - {leverage} - {margin}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
 
     # flimit buy/sell coin leverage margin price
@@ -172,13 +178,15 @@ class Command:
                 self.logger.error(Message(
                     title=f"Error Command.flimit - {order['side']} - {order['type']} - {symbol}",
                     body=f"Error: {responses['msg']}",
+                    chat_id=self.config.TELEGRAM_LOG_PEER_ID
                 ), True)
             else:
                 await update.message.reply_text(text=f"👋 Your limit order for {symbol} is successful\n {json.dumps(order, indent=2)}")
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.flimit - {side} - {symbol} - {leverage} - margin: ${margin} - price: ${price}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
     
     # fclose coin
@@ -200,6 +208,7 @@ class Command:
                         self.logger.error(Message(
                             title=f"Error Command.forder - {batch_orders[idx]['side']} - {batch_orders[idx]['type']} - {symbol}",
                             body=f"Error: {responses[idx]['msg']}",
+                            chat_id=self.config.TELEGRAM_LOG_PEER_ID
                         ), True)
                         ok = False
                 if ok:
@@ -220,7 +229,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.fclose - {symbol}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
 
     # fch coin interval(optional, default=15m) range(optional, default=21 * interval)
@@ -238,7 +248,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.fchart - {symbol}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
 
     # fp coin1 coin2 ....
@@ -255,7 +266,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.fprice - {symbol}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
 
     # fstats interval(seconds)
@@ -267,7 +279,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.fstats - {interval}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
     
     # ftpsl coin sl(optional) tp(optional)
@@ -286,6 +299,7 @@ class Command:
                         self.logger.error(Message(
                             title=f"Error Command.ftpsl - {batch_orders[idx]['side']} - {batch_orders[idx]['type']} - {symbol}",
                             body=f"Error: {responses[idx]['msg']}",
+                            chat_id=self.config.TELEGRAM_LOG_PEER_ID
                         ), True)
                         ok = False
                 if ok:
@@ -295,7 +309,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.ftpsl - {symbol}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
 
     # falert op1:coin1:price1_1,price1_2,...(:gap1, default=0.5%) op2:coin2:price2_1,price2_2,...(:gap2, default=0.5%)...
@@ -308,7 +323,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.falert - {' '.join(context.args)}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
 
     # add alert into map, format = op:coin:price1,price2,...(:gap, default=0.5%)
@@ -336,7 +352,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.falert_track - {interval}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
     
     # falert_list
@@ -355,7 +372,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.falert_list",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
     
     # falert_remove all; coin1:all/index0,index1,... coin2:all/index0,index1,...
@@ -372,7 +390,8 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.falert_remove - {' '.join(context.args)}",
-                body=f"Error: {err=}", 
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
     
     # Format remove: coin:all/index0,index1,...
@@ -455,6 +474,7 @@ class Command:
             self.logger.error(Message(
                 title=f"Error Command.Update {update}",
                 body=f"Error Msg: {context.error}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
 
     def info_spot(self):

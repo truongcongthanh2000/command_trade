@@ -11,6 +11,7 @@ class Config:
                 "roi_signal": 10,
                 "group_chat_id": 10,
                 "alert_chat_id": 10,
+                "log_peer_id": 10,
                 "me": ""
             },
             "command": {
@@ -33,6 +34,7 @@ class Config:
         self.TELEGRAM_ME = os.environ.get("TELEGRAM_ME") or config["telegram"]["me"]
         self.TELEGRAM_GROUP_CHAT_ID = int(os.environ.get("TELEGRAM_GROUP_CHAT_ID") or config["telegram"]["group_chat_id"])
         self.TELEGRAM_ALERT_CHAT_ID = int(os.environ.get("TELEGRAM_ALERT_CHAT_ID") or config["telegram"]["alert_chat_id"])
+        self.TELEGRAM_LOG_PEER_ID = int(os.environ.get("TELEGRAM_LOG_PEER_ID") or config["telegram"]["log_peer_id"])
 
         self.BINANCE_API_KEY = os.environ.get("BINANCE_API_KEY") or config["binance"]["api_key"]
         self.BINANCE_API_SECRET = os.environ.get("BINANCE_API_SECRET") or config["binance"]["api_secret"]

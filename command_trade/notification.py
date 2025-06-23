@@ -9,16 +9,18 @@ import telebot
 from telebot.types import LinkPreviewOptions
 
 class Message:
-    def __init__(self, body: str, title = 'Command Trade', format: str | None = "MarkdownV2", image: str | None = None):
+    def __init__(self, body: str, chat_id: int = 0, title = 'Command Trade', format: str | None = "MarkdownV2", image: str | None = None):
         self.title = title
         self.body = body
         self.format = format
         self.image = image
+        self.chat_id = chat_id
     def __str__(self):
         payload = {
             "title": self.title,
             "body": self.body,
-            "format": self.format
+            "format": self.format,
+            "chat_id": self.chat_id,
         }
         return json.dumps(payload)
 
@@ -42,9 +44,9 @@ class NotificationHandler:
         if message.format is not None:
             text_msg = telegramify_markdown.markdownify(text_msg)
         if message.image is not None and message.image != "":
-            self.telebot.send_photo(chat_id = self.config.TELEGRAM_GROUP_CHAT_ID, photo=message.image, caption = text_msg, parse_mode=message.format)
+            self.telebot.send_photo(chat_id = message.chat_id, photo=message.image, caption = text_msg, parse_mode=message.format)
         else:
-            self.telebot.send_message(chat_id = self.config.TELEGRAM_GROUP_CHAT_ID, text=text_msg, parse_mode=message.format, link_preview_options=LinkPreviewOptions(is_disabled=True))
+            self.telebot.send_message(chat_id = message.chat_id, text=text_msg, parse_mode=message.format, link_preview_options=LinkPreviewOptions(is_disabled=True))
 
     def start_worker(self):
         threading.Thread(target=self.process_queue, daemon=True).start()
