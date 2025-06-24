@@ -9,3 +9,7 @@ mplfinance==0.12.10b0
 telegramify-markdown==0.5.1
 pyTelegramBotAPI==4.27.0
 PyYAML==6.0.1
+jmespath==1.0.1
+nested-lookup==0.2.25
+parsel==1.10.0
+playwright==1.51.0
