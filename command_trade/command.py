@@ -8,6 +8,7 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes, Application
 import requests
 from .binance_api import BinanceAPI
+from .threads import Threads
 import json
 import traceback
 import pandas as pd
@@ -36,14 +37,21 @@ class PriceAlert:
             return price <= self.price
         else:
             return price >= self.price
-
+class ThreadsReply:
+    def __init__(self, url: str, max_timestamp: int):
+        self.url = url
+        self.max_timestamp = max_timestamp
+    def __str__(self):
+        return f"{self.url} ({datetime.fromtimestamp(self.max_timestamp, tz=pytz.timezone('Asia/Ho_Chi_Minh'))})"
 EPS = 1e-2
 class Command:
-    def __init__(self, config: Config, logger: Logger, binance_api: BinanceAPI):
+    def __init__(self, config: Config, logger: Logger, binance_api: BinanceAPI, threads: Threads):
         self.config = config
         self.logger = logger
         self.binance_api = binance_api
+        self.threads = threads
         self.map_alert_price = defaultdict(list)
+        self.map_tracking_replies = defaultdict(ThreadsReply)
         
     async def post_init(self, application: Application):
         self.logger.info("Start server")
@@ -61,7 +69,11 @@ class Command:
             ('falert', "falert op1:coin1:price1_1,price1_2,...(:gap1, default=0.5%) ..."),
             ('falert_track', "Tracking all alert price 'falert_track intervals(seconds)'"),
             ('falert_list', "List all current alert"),
-            ('falert_remove', "Remove alert 'falert_remove all; coin1:all/index0,index1,... coin2:all/index0,index1,...'")
+            ('falert_remove', "Remove alert 'falert_remove all; coin1:all/index0,index1,... coin2:all/index0,index1,...'"),
+            ('freplies' "Set track replies threads 'freplies url message_id'"),
+            ('freplies_track', "Tracking all replies threads 'freplies_track interval(seconds)'"),
+            ('freplies_list', "List all current replies threads"),
+            ('freplies_remove', "Remove replies 'freplies_remove all; message_id1 message_id2 ...'")
         ])
         try:
             commands = await application.bot.get_my_commands()
@@ -92,7 +104,11 @@ class Command:
         msg += "/falert - Set alert price 'falert op1:coin1:price1_1,price1_2,...(:gap1, default=0.5%) ...'\n"
         msg += "/falert_track - Tracking all alert price 'falert_track intervals(seconds)'\n"
         msg += "/falert_list - List all current alert\n"
-        msg += "/falert_remove - Remove alert 'falert_remove all; coin1:all/index0,index1,... coin2:all/index0,index1,...'"
+        msg += "/falert_remove - Remove alert 'falert_remove all; coin1:all/index0,index1,... coin2:all/index0,index1,...'\n"
+        msg += "/freplies - Set track replies threads 'freplies url message_id'\n"
+        msg += "/freplies_track - Tracking all replies threads 'freplies_track interval(seconds)'\n"
+        msg += "/freplies_list - List all current replies threads\n"
+        msg += "/freplies_remove - Remove replies 'freplies_remove all; message_id1 message_id2 ...'"
         """Handles command /help from the admin"""
         try:
             await update.message.reply_text(text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2)
@@ -387,6 +403,19 @@ class Command:
                 for input in context.args:
                     list_symbol.append(self.f_alert_remove(input))
             await update.message.reply_text(text=telegramify_markdown.markdownify(f"👋 Your removed alert for **{', '.join(list_symbol)}** successfully\nCommand `/falert_list` to see current alert."), parse_mode=ParseMode.MARKDOWN_V2)
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.falert_remove - {' '.join(context.args)}",
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
+            ), True)
+    
+    # freplies url message_id
+    async def freplies(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        try:
+            url = context.args[0]
+            message_id = int(context.args[1])
+            self.map_tracking_replies[message_id] = ThreadsReply(url, int(time.time()) - self.config.THREADS_SLA)
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.falert_remove - {' '.join(context.args)}",

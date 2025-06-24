@@ -4,6 +4,7 @@ from .config import Config
 from .notification import Message
 from .binance_api import BinanceAPI
 from .command import Command
+from .threads import Threads
 from datetime import datetime
 import pytz
 import json
@@ -14,7 +15,8 @@ def main():
     config = Config()
     logger = Logger(config, "command_trade_server")
     binanceAPI = BinanceAPI(config, logger)
-    command = Command(config, logger, binance_api=binanceAPI)
+    threads = Threads(config, logger)
+    command = Command(config, logger, binance_api=binanceAPI, threads=threads)
     if config.COMMAND_ENABLED == True:
         application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).read_timeout(7).get_updates_read_timeout(42).post_init(command.post_init).build()
         application.add_handler(CommandHandler("help", command.help))

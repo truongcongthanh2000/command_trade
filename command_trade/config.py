@@ -23,6 +23,9 @@ class Config:
             "proxies": {
                 "nscriptiod_http": "",
                 "nscriptiod_https": ""
+            },
+            "threads": {
+                "sla": 600
             }
         }
         if os.path.exists("config/config_remote.yaml"):
@@ -49,6 +52,8 @@ class Config:
             "http": os.environ.get("FIXIE_URL") or config["proxies"]["nscriptiod_http"],
             "https": os.environ.get("FIXIE_URL") or config["proxies"]["nscriptiod_https"]
         }
+
+        self.THREADS_SLA = int(os.environ.get("THREADS_SLA") or config["threads"]["sla"])
     def beautify(self):
         response = vars(self).copy()
         response["platform"] = platform.system()
