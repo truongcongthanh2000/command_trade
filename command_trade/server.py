@@ -5,10 +5,7 @@ from .notification import Message
 from .binance_api import BinanceAPI
 from .command import Command
 from .threads import Threads
-from datetime import datetime
-import pytz
-import json
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from telegram import Update
 
 def main():
@@ -33,6 +30,11 @@ def main():
         application.add_handler(CommandHandler("falert_track", command.falert_track))
         application.add_handler(CommandHandler("falert_list", command.falert_list))
         application.add_handler(CommandHandler("falert_remove", command.falert_remove))
+        application.add_handler(CommandHandler("freplies", command.freplies))
+        application.add_handler(CommandHandler("freplies_track", command.freplies_track))
+        application.add_handler(CommandHandler("freplies_list", command.freplies_list))
+        application.add_handler(CommandHandler("freplies_remove", command.freplies_remove))
+        application.add_handler(MessageHandler(~filters.COMMAND, command.info_message))
         application.add_error_handler(command.error)
         application.run_polling(drop_pending_updates=True, allowed_updates=Update.ALL_TYPES)
     while True:

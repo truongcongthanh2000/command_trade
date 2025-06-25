@@ -23,6 +23,7 @@ from collections import defaultdict
 
 JOB_NAME_FSTATS = "fstats"
 JOB_NAME_FALERT_TRACK = "falert_track"
+JOB_NAME_FREPLIES_TRACK = "freplies_track"
 class PriceAlert:
     def __init__(self, op: str, price: float, gap: float = 0.5):
         self.op = op
@@ -70,7 +71,7 @@ class Command:
             ('falert_track', "Tracking all alert price 'falert_track intervals(seconds)'"),
             ('falert_list', "List all current alert"),
             ('falert_remove', "Remove alert 'falert_remove all; coin1:all/index0,index1,... coin2:all/index0,index1,...'"),
-            ('freplies' "Set track replies threads 'freplies url message_id'"),
+            ('freplies', "Set track replies threads 'freplies url message_id'"),
             ('freplies_track', "Tracking all replies threads 'freplies_track interval(seconds)'"),
             ('freplies_list', "List all current replies threads"),
             ('freplies_remove', "Remove replies 'freplies_remove all; message_id1 message_id2 ...'")
@@ -139,6 +140,38 @@ class Command:
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Command.faccount - {update}",
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
+            ), True)
+
+    async def info_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE): # info current spot/future account, ex: balance, pnl, orders, ...
+        try:
+            if update.message and update.message.chat_id == self.config.TELEGRAM_GROUP_CHAT_ID and update.message.forward_origin:
+                if update.message.caption:
+                    msg = update.message.caption_markdown
+                    msg = msg.replace("*", "**")
+                    if msg is not None and "`/freplies" in msg:
+                        msg = msg[:-1]
+                        msg += f" {update.message.id}`"
+                    else:
+                        msg += f" {update.message.id}"
+                    msg = telegramify_markdown.markdownify(msg)
+                    await context.bot.edit_message_caption(msg, chat_id=update.message.forward_origin.chat.id, message_id=update.message.forward_origin.message_id, parse_mode=ParseMode.MARKDOWN_V2)
+                else:
+                    msg = update.message.text_markdown
+                    msg = msg.replace("*", "**")
+                    if msg is not None and "`/freplies" in msg:
+                        msg = msg[:-1]
+                        msg += f" {update.message.id}`"
+                    else:
+                        msg += f" {update.message.id}"
+                    msg = telegramify_markdown.markdownify(msg)
+                    await context.bot.edit_message_text(msg, chat_id=update.message.forward_origin.chat.id, message_id=update.message.forward_origin.message_id, parse_mode=ParseMode.MARKDOWN_V2)
+            else:
+                await asyncio.sleep(1)
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.info_message - {update}",
                 body=f"Error: {err=}",
                 chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
@@ -414,15 +447,105 @@ class Command:
     async def freplies(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             url = context.args[0]
-            message_id = int(context.args[1])
+            message_id = context.args[1]
             self.map_tracking_replies[message_id] = ThreadsReply(url, int(time.time()) - self.config.THREADS_SLA)
+            await update.message.reply_text(text=telegramify_markdown.markdownify(f"👋 Your set track replies for **{url}** to thread {message_id} successfully\nCommand `/freplies_track` interval(seconds) for tracking replies."), parse_mode=ParseMode.MARKDOWN_V2)
         except Exception as err:
             self.logger.error(Message(
-                title=f"Error Command.falert_remove - {' '.join(context.args)}",
+                title=f"Error Command.freplies - {' '.join(context.args)}",
                 body=f"Error: {err=}",
                 chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
-    
+
+    # freplies_track interval(seconds)
+    async def freplies_track(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        interval = int(context.args[0])
+        try:
+            self.f_replies_track(interval, context)
+            await update.message.reply_text(f"Your replies is tracking, interval={interval}s")
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.freplies_track - {interval}",
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
+            ), True)
+
+    # freplies_list
+    async def freplies_list(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        chat_id = self.config.TELEGRAM_LOG_PEER_ID
+        try:
+            msg = ""
+            for message_id in self.map_tracking_replies:
+                threads_reply = self.map_tracking_replies[message_id]
+                msg += f"👉 **{message_id}**: **{threads_reply.url}** - Time: {datetime.fromtimestamp(threads_reply.max_timestamp, tz=pytz.timezone('Asia/Ho_Chi_Minh'))}\n"
+            msg = "🔔 Here is your list replies:\n" + msg
+            await context.bot.send_message(chat_id, text=telegramify_markdown.markdownify(msg), parse_mode=ParseMode.MARKDOWN_V2, link_preview_options=LinkPreviewOptions(is_disabled=True))
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.freplies_list",
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
+            ), True)
+
+    async def freplies_remove(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        try:
+            chat_id = self.config.TELEGRAM_LOG_PEER_ID
+            list_message_id = []
+            if len(context.args) == 1 and context.args[0] == 'all':
+                list_message_id.append('all message_id')
+                self.map_tracking_replies.clear()
+            else:
+                for message_id in context.args:
+                    list_message_id.append(message_id)
+                    self.map_tracking_replies.pop(message_id, 'None')
+            await context.bot.send_message(chat_id, text=telegramify_markdown.markdownify(f"👋 Your removed replies for **{', '.join(list_message_id)}** successfully\nCommand `/freplies_list` to see current replies."), parse_mode=ParseMode.MARKDOWN_V2)
+        except Exception as err:
+            self.logger.error(Message(
+                title=f"Error Command.freplies_remove - {' '.join(context.args)}",
+                body=f"Error: {err=}",
+                chat_id=self.config.TELEGRAM_LOG_PEER_ID
+            ), True)
+
+    async def f_get_replies_track(self, context: ContextTypes.DEFAULT_TYPE):
+        chat_id = self.config.TELEGRAM_LOG_PEER_ID
+        if len(self.map_tracking_replies) == 0:
+            remove_job_if_exists(JOB_NAME_FREPLIES_TRACK, context)
+            await context.bot.send_message(chat_id, text=telegramify_markdown.markdownify("👋 You don't have any replies for tracking at this time!\nJob was removed, please command `/freplies_track` interval(seconds) when create a new reply."), parse_mode=ParseMode.MARKDOWN_V2)
+            return
+        replies = []
+        for message_id in self.map_tracking_replies:
+            replies.extend(await self.f_get_replies(message_id))
+        for message in replies:
+            self.logger.info(message, True)
+        await asyncio.sleep(1)
+
+    async def f_get_replies(self, message_id: str) -> list[Message]:
+        threads_reply = self.map_tracking_replies[message_id]
+        response = await self.threads.scrape_thread(threads_reply.url)
+        if "thread" not in response:
+            return
+        thread = response["thread"]
+        replies = response["replies"]
+        replies.sort(key = lambda reply: reply["published_on"])
+        max_timestamp = threads_reply.max_timestamp
+        list_replies = []
+        for reply in replies:
+            if reply["published_on"] <= threads_reply.max_timestamp:
+                continue
+            title = f"{reply['username']} - Time: {datetime.fromtimestamp(reply['published_on'], tz=pytz.timezone('Asia/Ho_Chi_Minh'))}"
+            if reply["username"] == thread["username"]:
+                title += f" - {self.config.TELEGRAM_ME}"
+            list_replies.append(Message(
+                body=f"{reply['text']}\n[Link: {reply['url']}]({reply['url']})",
+                title=title,
+                image=reply["images"],
+                chat_id=self.config.TELEGRAM_GROUP_CHAT_ID,
+                group_message_id=int(message_id)
+            ))
+            max_timestamp = reply["published_on"]
+        threads_reply.max_timestamp = max_timestamp
+        return list_replies
+
     # Format remove: coin:all/index0,index1,...
     def f_alert_remove(self, input: str):
         array = input.split(':')
@@ -704,6 +827,10 @@ class Command:
     def f_alert_track(self, interval: int, context: ContextTypes.DEFAULT_TYPE):
         remove_job_if_exists(JOB_NAME_FALERT_TRACK, context)
         context.job_queue.run_repeating(self.f_get_alert_track, interval=interval, first=0, name=JOB_NAME_FALERT_TRACK)
+
+    def f_replies_track(self, interval: int, context: ContextTypes.DEFAULT_TYPE):
+        remove_job_if_exists(JOB_NAME_FREPLIES_TRACK, context)
+        context.job_queue.run_repeating(self.f_get_replies_track, interval=interval, first=0, name=JOB_NAME_FREPLIES_TRACK)
 
     def f_set_leverage_and_margin_type(self, symbol: str, leverage: int = 10, margin_type: str = 'CROSSED'):
         position_info = self.binance_api.get_position_info(symbol)[0]

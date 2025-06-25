@@ -125,6 +125,7 @@ class Threads:
                         # other threads are replies:
                         "replies": threads[1:],
                     }
+            raise ValueError("could not find thread data in page")
         except Exception as err:
             self.logger.error(Message(
                 title=f"Error Threads.scrape_thread - url={url}",
@@ -132,3 +133,4 @@ class Threads:
                 format=None,
                 chat_id=self.config.TELEGRAM_LOG_PEER_ID
             ), True)
+            return {}

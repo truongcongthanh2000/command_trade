@@ -11,13 +11,14 @@ from telebot import apihelper
 import datetime
 import requests
 class Message:
-    def __init__(self, body: str, chat_id: int = 0, title = 'Command Trade', format: str | None = "MarkdownV2", image: str | None = None, images: list[str] | None = None):
+    def __init__(self, body: str, chat_id: int = 0, title = 'Command Trade', format: str | None = "MarkdownV2", image: str | None = None, images: list[str] | None = None, group_message_id: int | None = None):
         self.title = title
         self.body = body
         self.format = format
         self.image = image
         self.images = images
         self.chat_id = chat_id
+        self.group_message_id = group_message_id
     def __str__(self):
         payload = {
             "title": self.title,
@@ -26,6 +27,7 @@ class Message:
             "image": self.image,
             "images": self.images,
             "chat_id": self.chat_id,
+            "group_message_id": self.group_message_id
         }
         return json.dumps(payload)
     def build_text_notify(self):
@@ -59,12 +61,12 @@ class NotificationHandler:
                 else:
                     list_media.append(InputMediaPhoto(media=image))
             try:
-                self.telebot.send_media_group(chat_id = message.chat_id, media=list_media)
+                self.telebot.send_media_group(chat_id = message.chat_id, media=list_media, reply_to_message_id=message.group_message_id)
             except Exception as err:
-                self.telebot.send_message(chat_id = message.chat_id, text=text_msg + "\n" + f"Error send media group, err: {err}", parse_mode=message.format, link_preview_options=LinkPreviewOptions(is_disabled=True))
+                self.telebot.send_message(chat_id = message.chat_id, text=text_msg + "\n" + f"Error send media group, err: {err}", parse_mode=message.format, link_preview_options=LinkPreviewOptions(is_disabled=True), reply_to_message_id=message.group_message_id)
         elif message.image is not None and message.image != "":
             try:
-                self.telebot.send_photo(chat_id = message.chat_id, photo=message.image, caption = text_msg, parse_mode=message.format)
+                self.telebot.send_photo(chat_id = message.chat_id, photo=message.image, caption = text_msg, parse_mode=message.format, reply_to_message_id=message.group_message_id)
             except Exception as err:
                 print(datetime.datetime.now(), " - ERROR - ", Message(
                     title=f"Error Notification.send_photo, image={message.image}",
@@ -76,9 +78,9 @@ class NotificationHandler:
                 with open("photo.png", "wb+") as file:
                     for c in request:
                         file.write(c)
-                self.telebot.send_photo(chat_id = message.chat_id, photo=InputFile("photo.png"), caption = text_msg, parse_mode=message.format)
+                self.telebot.send_photo(chat_id = message.chat_id, photo=InputFile("photo.png"), caption = text_msg, parse_mode=message.format, reply_to_message_id=message.group_message_id)
         else:
-            self.telebot.send_message(chat_id = message.chat_id, text=text_msg, parse_mode=message.format, link_preview_options=LinkPreviewOptions(is_disabled=True))
+            self.telebot.send_message(chat_id = message.chat_id, text=text_msg, parse_mode=message.format, link_preview_options=LinkPreviewOptions(is_disabled=True), reply_to_message_id=message.group_message_id)
 
     def start_worker(self):
         threading.Thread(target=self.process_queue, daemon=True).start()
