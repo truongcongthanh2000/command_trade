@@ -49,8 +49,8 @@ class Config:
             self.COMMAND_ENABLED = config["command"]["enabled"]
 
         self.PROXIES = {
-            "http": os.environ.get("FIXIE_URL") or config["proxies"]["nscriptiod_http"],
-            "https": os.environ.get("FIXIE_URL") or config["proxies"]["nscriptiod_https"]
+            "http": os.environ.get("QUOTAGUARDSTATIC_URL") or config["proxies"]["nscriptiod_http"],
+            "https": os.environ.get("QUOTAGUARDSTATIC_URL") or config["proxies"]["nscriptiod_https"]
         }
 
         self.THREADS_SLA = int(os.environ.get("THREADS_SLA") or config["threads"]["sla"])
