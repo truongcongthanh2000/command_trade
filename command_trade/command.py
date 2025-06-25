@@ -149,6 +149,7 @@ class Command:
             if update.message and update.message.chat_id == self.config.TELEGRAM_GROUP_CHAT_ID and update.message.forward_origin:
                 if update.message.caption:
                     msg = update.message.caption_markdown_v2
+                    msg = msg.replace("**", "*")
                     msg = msg.replace("*", "**")
                     if msg is not None and "`/freplies" in msg:
                         msg = msg[:-1]
@@ -156,9 +157,10 @@ class Command:
                     else:
                         msg += f" {update.message.id}"
                     msg = telegramify_markdown.markdownify(msg)
-                    await context.bot.edit_message_caption(msg, chat_id=update.message.forward_origin.chat.id, message_id=update.message.forward_origin.message_id, parse_mode=ParseMode.MARKDOWN_V2)
+                    await context.bot.edit_message_caption(caption=msg, chat_id=update.message.forward_origin.chat.id, message_id=update.message.forward_origin.message_id, parse_mode=ParseMode.MARKDOWN_V2)
                 else:
                     msg = update.message.text_markdown_v2
+                    msg = msg.replace("**", "*")
                     msg = msg.replace("*", "**")
                     if msg is not None and "`/freplies" in msg:
                         msg = msg[:-1]
@@ -166,7 +168,7 @@ class Command:
                     else:
                         msg += f" {update.message.id}"
                     msg = telegramify_markdown.markdownify(msg)
-                    await context.bot.edit_message_text(msg, chat_id=update.message.forward_origin.chat.id, message_id=update.message.forward_origin.message_id, parse_mode=ParseMode.MARKDOWN_V2)
+                    await context.bot.edit_message_text(text=msg, chat_id=update.message.forward_origin.chat.id, message_id=update.message.forward_origin.message_id, parse_mode=ParseMode.MARKDOWN_V2)
             else:
                 await asyncio.sleep(1)
         except Exception as err:
