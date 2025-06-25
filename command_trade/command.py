@@ -166,7 +166,7 @@ class Command:
                         msg = msg[:-1]
                         msg += f" {update.message.id}`"
                         msg = telegramify_markdown.markdownify(msg)
-                        await context.bot.edit_message_caption(caption=msg, chat_id=update.message.forward_origin.chat.id, message_id=update.message.forward_origin.message_id, parse_mode=ParseMode.MARKDOWN_V2)
+                        await context.bot.edit_message_text(text=msg, chat_id=update.message.forward_origin.chat.id, message_id=update.message.forward_origin.message_id, parse_mode=ParseMode.MARKDOWN_V2)
                     else:
                         await asyncio.sleep(1)
             else:
