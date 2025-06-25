@@ -149,9 +149,9 @@ class Command:
             if update.message and update.message.chat_id == self.config.TELEGRAM_GROUP_CHAT_ID and update.message.forward_origin:
                 if update.message.caption:
                     msg = update.message.caption_markdown_v2
-                    msg = msg.replace("**", "*")
-                    msg = msg.replace("*", "**")
                     if msg is not None and "`/freplies" in msg:
+                        msg = msg.replace("**", "*")
+                        msg = msg.replace("*", "**")
                         msg = msg[:-1]
                         msg += f" {update.message.id}`"
                         msg = telegramify_markdown.markdownify(msg)
@@ -160,9 +160,9 @@ class Command:
                         await asyncio.sleep(1)
                 else:
                     msg = update.message.text_markdown_v2
-                    msg = msg.replace("**", "*")
-                    msg = msg.replace("*", "**")
                     if msg is not None and "`/freplies" in msg:
+                        msg = msg.replace("**", "*")
+                        msg = msg.replace("*", "**")
                         msg = msg[:-1]
                         msg += f" {update.message.id}`"
                         msg = telegramify_markdown.markdownify(msg)
