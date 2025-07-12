@@ -19,7 +19,7 @@ A command-line interface (CLI) trading bot for automating trades on cryptocurren
     - Setup bot telegram and chat_id [how to get chat_id telegram](https://gist.github.com/nafiesl/4ad622f344cd1dc3bb1ecbe468ff9f8a)
     - Create new file config_remote.yaml and fill all fields
 - Install all dependencies ```pip3 install -r requirements.txt```
-- Run code ```python3 -m command_trade```
+- Run code ```python3 -m command_trade```, you will see all commands in the group/channel chat on telegram.
 
 ## Deployment
 In this project, I use [Heroku](https://www.heroku.com/) as cloud platform for deployment. Here is the config 
